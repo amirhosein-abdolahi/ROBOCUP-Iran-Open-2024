@@ -3,6 +3,24 @@ import numpy as np
 from pupil_apriltags import Detector
 
 def detect_apriltags_webcam():
+    # AprileTags labels
+    labels = {
+        0: 'Tunnel Beginning',
+        1: 'Tunnel End',
+        2: 'Cross walk',
+        3: 'Parking zone',
+        4: 'No-Passing Zone',
+        5: 'Passing Zone',
+        6: 'stop',
+        7: 'priority over',
+        8: 'Bared area',
+        9: 'step uphill',
+        10: 'step downhill',
+        11: 'turn left',
+        12: 'turn right',
+        13: 'go straight',
+    }
+
     # Open a connection to the webcam (you can change the index if you have multiple cameras)
     cap = cv2.VideoCapture(0)
 
@@ -21,12 +39,15 @@ def detect_apriltags_webcam():
 
         # Draw the AprilTags on the frame
         for detection in detections:
-            for point in detection.corners:
-                pt = tuple(map(int, point))
-                cv2.circle(frame, pt, 5, (0, 255, 0), -1)
-            cv2.polylines(frame, [detection.corners.astype(int)], True, (0, 255, 0), 2)
-            cv2.putText(frame, f"ID: {detection.tag_id}", (int(detection.center[0]), int(detection.center[1])),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.polylines(frame, [detection.corners.astype(int)], True, (255, 255, 0), 2)
+            
+            # Set label 
+            try:
+                label = labels[detection.tag_id]
+            except:
+                label = 'No label found'
+            cv2.putText(frame, label, (int(detection.center[0]), int(detection.center[1])),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
 
         # Display the frame with AprilTag detections
         cv2.imshow('AprilTag Detection', frame)
