@@ -18,7 +18,7 @@ def detect_apriltags_webcam():
         10: 'step downhill',
         11: 'turn left',
         12: 'turn right',
-        13: 'go straight',
+        119: 'go straight',
     }
 
     # Open a connection to the webcam (you can change the index if you have multiple cameras)
