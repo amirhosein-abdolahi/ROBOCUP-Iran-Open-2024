@@ -31,7 +31,12 @@ def draw_lines(image, lines):
     if lines is not None:
         for line in lines:
             x1, y1, x2, y2 = line[0]
-            cv2.line(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            line_center = ((x1 + x2) // 2, (y1 + y2) // 2)
+            cv2.circle(image, line_center, 4, (255, 0, 0), 2)
+            if abs(y1 - y2) > 40:
+                cv2.line(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            else :
+                cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
 # Open a video capture object (0 for default camera, adjust as needed)
 cap = cv2.VideoCapture(0)

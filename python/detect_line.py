@@ -27,6 +27,11 @@ while True:
     frame_contours = frame.copy()
     cv2.drawContours(frame_contours, valid_contours, -1, (0, 255, 0), 2)
 
+    # :D
+    for contour in valid_contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(frame_contours, (x, y), (x + w, y + h), (0, 0, 255), 2)
+
     # Display the frames
     cv2.imshow('Original', frame)
     cv2.imshow('Contours', frame_contours)
