@@ -13,10 +13,14 @@ def detect_lanes(image):
 
     # Define a region of interest (ROI) to focus on the lanes
     height, width = edges.shape
-    roi_vertices = [(0, height), (width / 2, height / 2), (width, height)]
+    roi_vertices = [(0, height), (width / 3, height / 2), ((width / 3) * 2, height / 2), (width, height)]
+    roi_array_vertices = [np.array(roi_vertices, np.int32)]
     roi_mask = np.zeros_like(edges)
-    cv2.fillPoly(roi_mask, [np.array(roi_vertices, np.int32)], 255)
+    cv2.fillPoly(roi_mask, roi_array_vertices, 255)
     roi = cv2.bitwise_and(edges, roi_mask)
+
+    # Draw the ROI
+    cv2.polylines(frame, roi_array_vertices, True, (255, 0, 0), 2)
 
     # Use HoughLines to detect lines in the image
     lines = cv2.HoughLinesP(roi, 1, np.pi/180, threshold=50, minLineLength=50, maxLineGap=30)
