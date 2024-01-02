@@ -1,8 +1,6 @@
-int i;
-
-int r = 2;
-int y = 3;
-int g = 4;
+int r = 3;
+int y = 5;
+int g = 6;
 
 
 void setup() {
@@ -12,17 +10,15 @@ void setup() {
 }
 
 void loop() {
-  digitalWrite(g, 1);
+  analogWrite(g, 5);
   delay(1000);
-  digitalWrite(g, 0);
+  analogWrite(g, 0);
 
-  for (i=0; i<255; i++){
-    analogWrite(y, i);
-    delay(10);
-  }
+  analogWrite(y, 20);
+  delay(1000);
   analogWrite(y, 0);
 
-  digitalWrite(r, 1);
+  analogWrite(r, 20);
   delay(1000);
-  digitalWrite(r, 0);
+  analogWrite(r, 0);
 }
