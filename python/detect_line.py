@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from statistics import mean
 
 # Capture video from the camera (you might need to adjust the camera index)
 cap = cv2.VideoCapture(0)
@@ -40,13 +41,55 @@ while True:
     # Draw contours on the original frame
     cv2.drawContours(frame, valid_contours, -1, (0, 255, 0), 2)
 
-    # :D
+    # Find the contour's center
+    right_centers = [[], []]
+    left_centers = [[], []]
     for contour in valid_contours:
         m = cv2.moments(contour)
         cx = int(m['m10'] / m['m00'])
         cy = int(m['m01'] / m['m00'])
         cv2.line(frame, (cx, cy + 8), (cx, cy - 8), (0, 0, 255), 2)
         cv2.line(frame, (cx + 8, cy), (cx - 8, cy), (0, 0, 255), 2)
+
+        # clustering center of contours
+        if cx < width / 2:
+            left_centers[0].append(cx)
+            left_centers[1].append(cy)
+
+        elif cx > width / 2:
+            right_centers[0].append(cx)
+            right_centers[1].append(cy)
+
+    # Get mean of centers
+    left_center = None
+    right_center = None
+    try :
+        left_center = (int(mean(left_centers[0])), int(mean(left_centers[1])))
+        cv2.circle(frame, left_center, 5, (0, 255, 255), 2)
+    except :
+        left_center = None
+
+    try :
+        right_center = (int(mean(right_centers[0])), int(mean(right_centers[1])))
+        cv2.circle(frame, right_center, 5, (0, 255, 255), 2)
+    except :
+        right_center = None
+
+    # find center of track
+    try :
+        center_x = int(mean([left_center[0], right_center[0]]))
+        center_y = int(mean([left_center[1], right_center[1]]))
+        # center = (center_x, center_y)
+        # cv2.circle(frame, center, 5, (0, 0, 255), 2)
+        cv2.line(frame, (center_x + 8, center_y + 8), (center_x - 8, center_y - 8), (0, 0, 255), 2)
+        cv2.line(frame, (center_x + 8, center_y - 8), (center_x - 8, center_y + 8), (0, 0, 255), 2)
+        cv2.line(frame, (center_x, int(height / 2)), (center_x, height), (255, 255, 0), 2)
+    except :
+        center = None
+
+
+
+
 
     # Display the frames
     cv2.imshow('Line Detection', frame)
