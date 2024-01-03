@@ -79,17 +79,29 @@ while True:
     try :
         center_x = int(mean([left_center[0], right_center[0]]))
         center_y = int(mean([left_center[1], right_center[1]]))
-        # center = (center_x, center_y)
-        # cv2.circle(frame, center, 5, (0, 0, 255), 2)
         cv2.line(frame, (center_x + 8, center_y + 8), (center_x - 8, center_y - 8), (0, 0, 255), 2)
         cv2.line(frame, (center_x + 8, center_y - 8), (center_x - 8, center_y + 8), (0, 0, 255), 2)
-        cv2.line(frame, (center_x, int(height / 2)), (center_x, height), (255, 255, 0), 2)
+        cv2.line(frame, (center_x, height // 2), (center_x, height), (255, 255, 0), 2)
     except :
-        center = None
+        try :
+            center_x = right_center[0] - 180
+            center_y = right_center[1]
+            cv2.line(frame, (center_x + 8, center_y + 8), (center_x - 8, center_y - 8), (0, 0, 255), 2)
+            cv2.line(frame, (center_x + 8, center_y - 8), (center_x - 8, center_y + 8), (0, 0, 255), 2)
+            cv2.line(frame, (center_x, height // 2), (center_x, height), (255, 255, 0), 2)
+        except :
+            try :
+                center_x = left_center[0] + 180
+                center_y = left_center[1]
+                cv2.line(frame, (center_x + 8, center_y + 8), (center_x - 8, center_y - 8), (0, 0, 255), 2)
+                cv2.line(frame, (center_x + 8, center_y - 8), (center_x - 8, center_y + 8), (0, 0, 255), 2)
+                cv2.line(frame, (center_x, height // 2), (center_x, height), (255, 255, 0), 2)
+            except :
+                pass
 
-
-
-
+    # Draw two lines
+    cv2.line(frame, ((width // 2) - 20, height // 2), ((width // 2) - 20, height), (255, 0, 255), 2)
+    cv2.line(frame, ((width // 2) + 20, height // 2), ((width // 2) + 20, height), (255, 0, 255), 2)
 
     # Display the frames
     cv2.imshow('Line Detection', frame)
