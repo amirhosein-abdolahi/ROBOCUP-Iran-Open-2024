@@ -28,6 +28,12 @@ while True:
     # Draw the ROI
     cv2.polylines(frame, roi_array_vertices, True, (255, 0, 0), 2)
 
+    # Draw two edge lines
+    left_edge = (width // 2) - 20
+    right_edge = (width // 2) + 20
+    cv2.line(frame, (left_edge, height // 2), (left_edge, height), (255, 0, 255), 2)
+    cv2.line(frame, (right_edge, height // 2), (right_edge, height), (255, 0, 255), 2)
+
     # Thresholding to create a binary image
     _, binary = cv2.threshold(roi, 200, 255, cv2.THRESH_BINARY)
 
@@ -51,7 +57,7 @@ while True:
         cv2.line(frame, (cx, cy + 8), (cx, cy - 8), (0, 0, 255), 2)
         cv2.line(frame, (cx + 8, cy), (cx - 8, cy), (0, 0, 255), 2)
 
-        # clustering center of contours
+        # Clustering center of contours to left and right side
         if cx < width / 2:
             left_centers[0].append(cx)
             left_centers[1].append(cy)
@@ -60,7 +66,7 @@ while True:
             right_centers[0].append(cx)
             right_centers[1].append(cy)
 
-    # Get mean of centers
+    # Get mean of left centers and right centers
     left_center = None
     right_center = None
     try :
@@ -75,7 +81,9 @@ while True:
     except :
         right_center = None
 
-    # find center of track
+    # Find center of track and draw center line and X on center line
+    center_x = None
+    center_y = None
     try :
         center_x = int(mean([left_center[0], right_center[0]]))
         center_y = int(mean([left_center[1], right_center[1]]))
@@ -99,9 +107,21 @@ while True:
             except :
                 pass
 
-    # Draw two lines
-    cv2.line(frame, ((width // 2) - 20, height // 2), ((width // 2) - 20, height), (255, 0, 255), 2)
-    cv2.line(frame, ((width // 2) + 20, height // 2), ((width // 2) + 20, height), (255, 0, 255), 2)
+    # Ordering based on center_x
+    movement_order = None
+    try :
+        if left_edge < center_x < right_edge:
+            movement_order = "Go forward"
+
+        elif center_x <= left_edge:
+            movement_order = "Turn left"
+
+        elif center_x >= right_edge:
+            movement_order = "Turn right"
+
+        cv2.putText(frame, movement_order, (width // 3, (height // 2) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
+    except :
+        pass
 
     # Display the frames
     cv2.imshow('Line Detection', frame)
