@@ -2,8 +2,11 @@ import cv2
 import numpy as np
 from statistics import mean
 
+# :D
+url = "http://192.168.1.103:4747/video"
+
 # Capture video from the camera (you might need to adjust the camera index)
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(url)
 
 while True:
     # Read a frame from the video stream
