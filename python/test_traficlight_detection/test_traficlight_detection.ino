@@ -1,24 +1,41 @@
-int r = 3;
-int y = 5;
-int g = 6;
+int r = 2;
+int y = 3;
+int g = 4;
 
 
 void setup() {
+  Serial.begin(9600);
   pinMode(r, OUTPUT);
   pinMode(y, OUTPUT);
   pinMode(g, OUTPUT);
 }
 
 void loop() {
-  analogWrite(g, 5);
-  delay(1000);
-  analogWrite(g, 0);
+  if (Serial.available() > 0) {
+    String data = Serial.readStringUntil('\n');
 
-  analogWrite(y, 20);
-  delay(1000);
-  analogWrite(y, 0);
+    if (data == "Turn left") {
+      digitalWrite(y, 0);
+      digitalWrite(r, 0);
+      digitalWrite(g, 1);
+    }
+      
+    else if (data == "Go forward") {
+      digitalWrite(g, 0);
+      digitalWrite(r, 0);
+      digitalWrite(y, 1);
+    }
 
-  analogWrite(r, 20);
-  delay(1000);
-  analogWrite(r, 0);
+    else if (data == "Turn right") {
+      digitalWrite(g, 0);
+      digitalWrite(y, 0);
+      digitalWrite(r, 1);
+    }
+    
+    else {
+      digitalWrite(g, 0);
+      digitalWrite(y, 0);
+      digitalWrite(r, 0);
+    }
+  }
 }
