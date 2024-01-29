@@ -8,11 +8,20 @@ import serial
 line_gap = None
 
 # Set up the serial connection to arduino
-ser = serial.Serial('COM10', 9600)
+ser = serial.Serial('/dev/ttyUSB0', 9600)
+time.sleep(5)
 
 # Send csv type data to Arduino
 def sender(value):
-    ser.write(f'{value}\n'.encode())
+    if value == "Go forward":
+        ser.write("center,forward\n".encode())
+
+    elif value == "Turn left":
+        ser.write("left,forward\n".encode())
+
+    elif value == "Turn right":
+        ser.write("right,forward\n".encode())
+        
     time.sleep(0.01)
     # print(value)
 
