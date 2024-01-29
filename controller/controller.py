@@ -1,6 +1,10 @@
 import customtkinter
+import cv2 
 import serial
 import time
+
+# Capture the video frame from the webcam
+cap = cv2.VideoCapture(0)
 
 # Set up the serial connection to arduino
 ser = serial.Serial('/dev/ttyUSB0', 9600)
@@ -114,4 +118,20 @@ backwardBut.grid(column=3, row=3, padx=10, pady=10)
 centerBut.grid(column=1, row=2, padx=10, pady=10)
 
 # Run the application
-app.mainloop()
+# app.mainloop()
+
+# Run the application in loop mode
+while True:
+    app.update()
+
+    # Get frame and show
+    cam, frame = cap.read()
+    if cam is not None:
+        cv2.imshow("camera", frame)
+
+    # Terminate the application
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        app.quit()
+        cap.release()
+        cv2.destroyAllWindows()
+        break
