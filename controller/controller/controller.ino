@@ -102,37 +102,4 @@ void loop() {
       }
     }
   }
-
-
-
-
-
-
-
-
-
-
-  // // center to right
-  // myservo.write(0);
-  // delay(d1go);
-  // myservo.write(90);
-  // delay(c);
-
-  // // right to center
-  // myservo.write(180);
-  // delay(d1back);
-  // myservo.write(90);
-  // delay(c);
-
-  // // center to left
-  // myservo.write(180);
-  // delay(d2go);
-  // myservo.write(90);
-  // delay(c);
-
-  // // left to center
-  // myservo.write(0);
-  // delay(d2back);
-  // myservo.write(90);
-  // delay(c);
 }
