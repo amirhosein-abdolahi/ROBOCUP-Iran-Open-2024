@@ -16,7 +16,7 @@ def line_detection(frame):
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
     # Define region of interests (ROI) to focus on the lines
-    height, width = blurred.shape
+    height, width = gray.shape
     roi_up = (height // 3) * 2
     roi_down = height - 30
     
@@ -84,16 +84,7 @@ def line_detection(frame):
         right_centers[1].append(cy)
         cv2.line(frame, (cx, cy + 8), (cx, cy - 8), (0, 0, 255), 2)
         cv2.line(frame, (cx + 8, cy), (cx - 8, cy), (0, 0, 255), 2)
-        
-    #     # Clustering center of contours to left and right side
-    #     if cx < width / 2:
-    #         left_centers[0].append(cx)
-    #         left_centers[1].append(cy)
-
-    #     elif cx > width / 2:
-    #         right_centers[0].append(cx)
-    #         right_centers[1].append(cy)
-            
+              
     # Get mean of left centers and right centers
     left_center = None
     right_center = None
@@ -101,14 +92,14 @@ def line_detection(frame):
         left_center = (int(mean(left_centers[0])), int(mean(left_centers[1])))
         cv2.circle(frame, left_center, 5, (0, 255, 255), 2)
     except :
-        left_center = None
+        pass
 
     try :
         right_center = (int(mean(right_centers[0])), int(mean(right_centers[1])))
         cv2.circle(frame, right_center, 5, (0, 255, 255), 2)
     except :
-        right_center = None
-        
+        pass
+    
     # Find center of track and draw center line and X on center line
     global line_gap
     line_gap = width // 2 if line_gap is None else line_gap
@@ -135,20 +126,20 @@ def line_detection(frame):
         cv2.line(frame, (center_x, roi_up), (center_x, roi_down), (255, 255, 0), 2)
     
     # Ordering based on center_x
-    movement_order = None
+    order = None
     try :
         if left_edge < center_x < right_edge:
-            movement_order = "Go forward"
+            order = "Go forward"
 
         elif center_x <= left_edge:
-            movement_order = "Turn left"
+            order = "Turn left"
 
         elif center_x >= right_edge:
-            movement_order = "Turn right"
+            order = "Turn right"
 
         # Show and send csv type data to arduino
-        cv2.putText(frame, movement_order, (0, (roi_up) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
+        cv2.putText(frame, order, (0, roi_up - 35), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
     except :
         pass
     
-    return frame, movement_order
+    return frame, order

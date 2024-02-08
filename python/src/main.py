@@ -1,9 +1,12 @@
-# import libraries
+# Import libraries
+from unittest import result
 import cv2
 
 # Import modules
+# # import mod.order_sender as sender
 import mod.line_detection as line
-# import mod.order_sender as sender
+import mod.crosswalk_detection as crosswalk
+import mod.apriltag_detection as apriltag
     
 # Capture video from the camera (you might need to adjust the camera index)
 cap = cv2.VideoCapture(0)
@@ -15,14 +18,20 @@ while True:
         print(FileNotFoundError)
         break
     
-    # detect the track and lines
-    frame, order = line.line_detection(frame)
+    # Detect the april tags
+    result_frame = apriltag.apriltag_detection(frame)
     
-    # send order to arduino
-    # sender.order_sender(order)
+    # Detect the croswalk
+    result_frame = crosswalk.crosswalk_detection(frame)
+    
+    # Detect the track and lines
+    result_frame, order = line.line_detection(frame)
+    
+    # Send order to arduino
+    # Sender.order_sender(order)
     
     # Display the frames
-    cv2.imshow('Line Detection', frame)
+    cv2.imshow('Line Detection', result_frame)
     
     # Break the loop if 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
