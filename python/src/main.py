@@ -19,13 +19,13 @@ while True:
         break
     
     # Detect the april tags
-    result_frame = apriltag.apriltag_detection(frame)
+    result_frame, apriltag_order = apriltag.apriltag_detection(frame)
     
     # Detect the croswalk
-    result_frame = crosswalk.crosswalk_detection(frame)
+    result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
     
     # Detect the track and lines
-    result_frame, order = line.line_detection(frame)
+    result_frame, line_order = line.line_detection(frame)
     
     # Send order to arduino
     # Sender.order_sender(order)

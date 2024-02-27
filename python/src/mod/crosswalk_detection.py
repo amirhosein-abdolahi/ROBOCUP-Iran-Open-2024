@@ -52,7 +52,7 @@ def crosswalk_detection(frame):
     contours2, _ = cv2.findContours(binary2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Filter contours based on area (adjust the threshold as needed)
-    min_contour_area = 500
+    min_contour_area = 200
     valid_contours1 = [cnt for cnt in contours1 if cv2.contourArea(cnt) > min_contour_area]
     valid_contours2 = [cnt for cnt in contours2 if cv2.contourArea(cnt) > min_contour_area]
 
