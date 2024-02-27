@@ -1,16 +1,8 @@
 #include <Servo.h>
 Servo myservo;
 
-String steering_state = "center";
-
 int E = 10;
 int M = 12;
-
-int delay_go_right = 140;
-int delay_back_right = 140;
-
-int delay_go_left = 240;
-int delay_back_left = 240;
 
 void setup() {  
   Serial.begin(9600);
@@ -36,50 +28,17 @@ void loop() {
       // control steering
       // go to center
       if (steering == "center") {
-        if (steering_state == "right") {
-          myservo.write(180);
-          delay(delay_back_right);
-          myservo.write(90);
-          steering_state = "center";
-        } 
-        else if (steering_state == "left") {
-          myservo.write(0);
-          delay(delay_back_left);
-          myservo.write(90);
-          steering_state = "center";
-        }
+        myservo.write(90);
       }
 
       // go to right
       else if (steering == "right") {
-        if (steering_state == "center") {
-          myservo.write(0);
-          delay(delay_go_right);
-          myservo.write(90);
-          steering_state = "right";
-        } 
-        else if (steering_state == "left") {
-          myservo.write(0);
-          delay(delay_back_left + delay_go_right);
-          myservo.write(90);
-          steering_state = "right";
-        }
+        myservo.write(70);
       }
 
       // go to left
       else if (steering == "left") {
-        if (steering_state == "center") {
-          myservo.write(180);
-          delay(delay_go_left);
-          myservo.write(90);
-          steering_state = "left";
-        } 
-        else if (steering_state == "right") {
-          myservo.write(180);
-          delay(delay_back_right + delay_go_left);
-          myservo.write(90);
-          steering_state = "left";
-        }
+        myservo.write(130);
       }
 
       // control motor
