@@ -13,6 +13,9 @@ const int dirY = 6; // Y.DIR
 const int stepZ = 4; //Z.STEP
 const int dirZ = 7; // Z.DIR
 
+int dirPin = dirZ;
+int stepPin = stepZ;
+
 // defining speeds
 int turnSpeed = 1200;
 int goSpeed = 900;
@@ -37,36 +40,36 @@ void loop() {
 
   // Go forward
 
-  digitalWrite(dirZ, HIGH);
+  digitalWrite(dirPin, HIGH);
 
   for(i=0; i<go; i++){
-    digitalWrite(stepZ, HIGH);
+    digitalWrite(stepPin, HIGH);
     delayMicroseconds(goSpeed);
-    digitalWrite(stepZ, LOW);
+    digitalWrite(stepPin, LOW);
     delayMicroseconds(goSpeed);
   }
 
   delay(500);
 
   // turn wheel
-  digitalWrite(dirY, HIGH);
+  digitalWrite(dirPin, HIGH);
 
   for(i = 0; i < turn; i++){
-    digitalWrite(stepY, HIGH);
+    digitalWrite(stepPin, HIGH);
     delayMicroseconds(turnSpeed);
-    digitalWrite(stepY, LOW);
+    digitalWrite(stepPin, LOW);
     delayMicroseconds(turnSpeed);
 
   }
 
   delay(500);
 
-  digitalWrite(dirY, LOW);
+  digitalWrite(dirPin, LOW);
   
   for(i = 0; i < turn; i++){
-    digitalWrite(stepY, HIGH);
+    digitalWrite(stepPin, HIGH);
     delayMicroseconds(turnSpeed);
-    digitalWrite(stepY, LOW);
+    digitalWrite(stepPin, LOW);
     delayMicroseconds(turnSpeed);
   }
 

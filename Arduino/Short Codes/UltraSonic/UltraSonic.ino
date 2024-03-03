@@ -16,8 +16,8 @@ void loop()  {
   digitalWrite(TRIG_PIN, LOW);
   
 
-  const unsigned long duration= pulseIn(ECHO_PIN, HIGH);
- int distance= duration/29/2;
+  const unsigned long duration = pulseIn(ECHO_PIN, HIGH);
+  int distance= duration/29/2;
   if(duration==0){
    Serial.println("Warning: no pulse from sensor");
    }  
