@@ -39,8 +39,8 @@ def edge_detection(frame):
         for line in lines:
             x1, y1, x2, y2 = line[0]
             theta = abs(y2 - y1) / abs(x2 - x1) 
-            # Separate lines that are not horizontal
-            if theta > 0.3:
+            # Separate lines that are not vectorizental
+            if theta >= 0.3:
                 line_center = (abs(x1 + x2) // 2, abs(y1 + y2) // 2)
                 line = np.append(line, [line_center[0], line_center[1]])
                 
@@ -80,29 +80,11 @@ def edge_detection(frame):
             x1, y1, x2, y2, cx, cy = left_line
             left_edge = cx
             cv2.line(frame, (x1, y1), (x2, y2), (36, 51, 235), 5)
-            # cv2.circle(frame, (cx, cy), 4, (255, 0, 0), 2)
-            
-            # This code is for find uper dot
-            # if y1 < y2:
-            #     left_edge = x1
-            #     cv2.circle(frame, (x1, y1), 4, (255, 0, 0), 2)
-            # else:
-            #     left_edge = x2
-            #     cv2.circle(frame, (x2, y2), 4, (255, 0, 0), 2)
             
         if right_line is not None:
             x1, y1, x2, y2, cx, cy = right_line
             right_edge = cx
             cv2.line(frame, (x1, y1), (x2, y2), (36, 51, 235), 5)
-            # cv2.circle(frame, (cx, cy), 4, (255, 0, 0), 2)
-            
-            # This code is for find uper dot
-            # if y1 < y2:
-            #     left_edge = x1
-            #     cv2.circle(frame, (x1, y1), 4, (255, 0, 0), 2)
-            # else:
-            #     left_edge = x2
-            #     cv2.circle(frame, (x2, y2), 4, (255, 0, 0), 2)
             
         # Find the track line
         if left_edge is not None and right_edge is not None:
@@ -112,7 +94,7 @@ def edge_detection(frame):
             track_line = ((right_edge - 200), roi_up)
             
         elif left_edge is not None:
-            track_line = ((left_edge + 200), roi_up)
+            track_line = ((left_edge + 260), roi_up)
             
         else:
             track_line = None
@@ -143,8 +125,5 @@ def edge_detection(frame):
                 order = "left left"
             else:
                 order = "no line"
-        
-    # Show order
-    cv2.putText(frame, order, (20, 30), cv2.FONT_HERSHEY_SIMPLEX, .8, (128, 54, 234), 2)
             
     return frame, order
