@@ -3,7 +3,7 @@ import cv2
 
 
 # Import modules
-# import mod.order_sender as sender
+import mod.order_sender as sender
 import mod.edge_detection as edge
     
 # Capture video from the camera (you might need to adjust the camera index)
@@ -20,7 +20,7 @@ while True:
     result_frame, edge_order = edge.edge_detection(frame)
     
     # Send order to arduino
-    # Sender.order_sender(order)
+    sender.order_sender(edge_order)
     
     # Display the frames
     cv2.imshow('result', result_frame)

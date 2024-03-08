@@ -25,7 +25,7 @@ void loop() {
       String steering = value.substring(0, comma_index);
       String motor = value.substring(comma_index + 1);
 
-      // control steering
+      // control steering ================
       // go to center
       if (steering == "center") {
         myservo.write(90);
@@ -33,15 +33,25 @@ void loop() {
 
       // go to right
       else if (steering == "right") {
-        myservo.write(70);
+        myservo.write(110);
       }
 
       // go to left
       else if (steering == "left") {
+        myservo.write(70);
+      }
+
+      // go more to right
+      else if (steering == "right_right") {
         myservo.write(130);
       }
 
-      // control motor
+      // go more to left
+      else if (steering == "left_left") {
+        myservo.write(50);
+      }
+
+      // control motor ===================
       // stop motor
       if (motor == "stop") {
         analogWrite(E, 0);
