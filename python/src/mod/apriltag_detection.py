@@ -1,36 +1,25 @@
 # Import libraries
-# from ast import main
-# from operator import ne
-# from numpy import size
 from pupil_apriltags import Detector
 import cv2
 import math
 detector = Detector(families='tag36h11')
 
-# Define colors
-red = (0, 0, 255)
-blue = (255, 0, 0)
-green = (0, 255, 0)
-cyen = (255, 255, 0)
-magenta = (255, 0, 255)
-yellow = (0, 255, 255)
-
 # Mach labels and april tags
 labels = {
-    0: 'Tunnel Beginning', # Important
-    1: 'Tunnel End', # Important
-    2: 'Cross walk', # Important
-    3: 'Parking zone', # Important
-    4: 'No-Passing Zone',
-    5: 'Passing Zone',
-    6: 'stop', # Important
-    7: 'priority over',
-    8: 'Bared area',
-    9: 'step uphill',
-    10: 'step downhill',
-    11: 'turn left', # Important
-    12: 'turn right', # Important
-    119: 'go straight', # Important
+    0: 'tunnel Beginning',
+    1: 'tunnel End',
+    2: 'cross walk',
+    3: 'parking zone',
+    # 4: 'No-Passing Zone',
+    # 5: 'Passing Zone',
+    6: 'stop',
+    # 7: 'priority over',
+    # 8: 'Bared area',
+    # 9: 'step uphill',
+    # 10: 'step downhill',
+    11: 'turn left',
+    12: 'turn right',
+    119: 'go straight',
 }
 
 # Functions for detect apriltag
@@ -50,22 +39,20 @@ def apriltag_detection(frame):
         dot2 = [corners[0][2][0], corners[0][2][1]]
         size = int(math.dist(dot2, dot1))
         
-        if size > main_size:
-            nearest_apriltag = detection
-            main_size = size
+        if size >= 40:
+            if size > main_size:
+                nearest_apriltag = detection
+                main_size = size
     
     # Show nearest apriltag
-    label = 'No label found'
-    if nearest_apriltag:
-        cv2.polylines(frame, [nearest_apriltag.corners.astype(int)], True, blue, 2)
+    label = 'no label found'
+    if nearest_apriltag is not None:
+        cv2.polylines(frame, [nearest_apriltag.corners.astype(int)], True, (240, 130, 50), 2)
         
         # Find label and get order
         try:
             label = labels[nearest_apriltag.tag_id]
         except:
             pass
-        cv2.putText(frame, label,
-                    (int(nearest_apriltag.center[0]), int(nearest_apriltag.center[1])),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
     
-    return frame, labels
+    return frame, label

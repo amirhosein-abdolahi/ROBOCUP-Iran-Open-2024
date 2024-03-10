@@ -6,6 +6,7 @@ import cv2
 import mod.order_sender as sender
 import mod.edge_detection as edge
 import mod.crosswalk_detection as crosswalk
+import mod.apriltag_detection as apriltag
     
 # Capture video from the camera (you might need to adjust the camera index)
 cap = cv2.VideoCapture(0)
@@ -17,6 +18,9 @@ while True:
         print(FileNotFoundError)
         break
     
+    # Detect apriltag
+    result_frame, apriltag_label = apriltag.apriltag_detection(frame)
+    
     # Detect cross walk
     result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
     
@@ -24,15 +28,18 @@ while True:
     result_frame, edge_order = edge.edge_detection(frame)
     
     # Send order to arduino
-    if crosswalk_order == "crosswalk":
-        order = "stop"
+    if apriltag_label == "stop":
+        order = "stop"  
     else:
-        order = edge_order
+        if crosswalk_order == "crosswalk":
+            order = "stop"
+        else:
+            order = edge_order
     
     sender.order_sender(order)
     
     # Show order
-    text = f"{edge_order}\n{crosswalk_order}\n{order}"
+    text = f"{apriltag_label}\n{crosswalk_order}\n{edge_order}\n{order}"
     y0, dy = 30, 25
     for i, line in enumerate(text.split('\n')):
         y = y0 + i * dy
