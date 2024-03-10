@@ -7,6 +7,7 @@ import mod.order_sender as sender
 import mod.edge_detection as edge
 import mod.crosswalk_detection as crosswalk
 import mod.apriltag_detection as apriltag
+import mod.trafficlight_detection as trafficlight
     
 # Capture video from the camera (you might need to adjust the camera index)
 cap = cv2.VideoCapture(0)
@@ -23,6 +24,9 @@ while True:
     
     # Detect cross walk
     result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
+    
+    # Detect traffic light
+    result_frame, trafficlight_order = trafficlight.trafficlight_detection(frame)
     
     # Detect and track lines with edges
     result_frame, edge_order = edge.edge_detection(frame)
