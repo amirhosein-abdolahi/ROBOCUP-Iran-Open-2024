@@ -4,3 +4,4 @@ python/document/
 python/picture/
 python/src/mod/__pycache__/
 .vscode/
+.venv/
