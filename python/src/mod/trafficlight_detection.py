@@ -34,7 +34,7 @@ def trafficlight_detection(frame):
             biger_area = area
             x, y, w, h = cv2.boundingRect(contour)
             trafic_x, trafic_y, trafic_w, trafic_h= x, y, w, h
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (240, 130, 50), 2)
     
     # Find lights and issue the order
     for contour in led_contours:

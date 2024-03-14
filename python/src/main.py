@@ -43,7 +43,7 @@ while True:
     sender.order_sender(order)
     
     # Show order
-    text = f"{apriltag_label}\n{crosswalk_order}\n{edge_order}\n{order}"
+    text = f"{apriltag_label}\n{crosswalk_order}\n{trafficlight_order}\n{edge_order}\n{order}"
     y0, dy = 30, 25
     for i, line in enumerate(text.split('\n')):
         y = y0 + i * dy
