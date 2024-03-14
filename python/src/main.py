@@ -1,14 +1,26 @@
 # Import libraries
 import cv2
-
+import serial
+import time
 
 # Import modules
-import mod.order_sender as sender
 import mod.edge_detection as edge
 import mod.crosswalk_detection as crosswalk
 import mod.apriltag_detection as apriltag
-import mod.trafficlight_detection as trafficlight
-    
+import mod.trafficlight_detection as light
+
+# Set up the serial connection to arduino
+ser = serial.Serial('COM10', 9600) # For raspberry pi '/dev/ttyUSB0'
+time.sleep(5) # Initialized the serial connection
+
+# Function for sending orders to arduino
+last_order = None
+def send_orders(order):
+    if last_order != order:
+        last_order = order
+        ser.write(str(order).encode())
+        time.sleep(.01)
+
 # Capture video from the camera (you might need to adjust the camera index)
 cap = cv2.VideoCapture(0)
 
@@ -26,7 +38,7 @@ while True:
     result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
     
     # Detect traffic light
-    result_frame, trafficlight_order = trafficlight.trafficlight_detection(frame)
+    result_frame, trafficlight_order = light.trafficlight_detection(frame)
     
     # Detect and track lines with edges
     result_frame, edge_order = edge.edge_detection(frame)
@@ -40,7 +52,7 @@ while True:
         else:
             order = edge_order
     
-    sender.order_sender(order)
+    send_orders(order)
     
     # Show order
     text = f"{apriltag_label}\n{crosswalk_order}\n{trafficlight_order}\n{edge_order}\n{order}"
