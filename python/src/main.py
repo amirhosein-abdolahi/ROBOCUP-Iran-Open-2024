@@ -1,4 +1,5 @@
 # Import libraries
+from genericpath import exists
 import cv2
 import serial
 import time
@@ -34,24 +35,74 @@ while True:
     # Detect apriltag
     result_frame, apriltag_label = apriltag.apriltag_detection(frame)
     
-    # Detect cross walk
-    result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
-    
-    # Detect traffic light
-    result_frame, trafficlight_order = light.trafficlight_detection(frame)
-    
     # Detect and track lines with edges
     result_frame, edge_order = edge.edge_detection(frame)
     
-    # Send order to arduino
-    if apriltag_label == "stop":
-        order = "stop"  
+    # Maping edge order with number
+    steering, motor = 0, 0
+    if edge_order == 'forward':
+        steering, motor = 3, 1
+    elif edge_order == 'right':
+        steering, motor = 2, 1
+    elif edge_order == 'left':
+        steering, motor = 4, 1
+    elif edge_order == 'right right':
+        steering, motor = 1, 1
+    elif edge_order == 'left left':
+        steering, motor = 5, 1
     else:
-        if crosswalk_order == "crosswalk":
-            order = "stop"
-        else:
-            order = edge_order
+        steering, motor = 3, 1
     
+    
+    # 
+    order = [None for a in range(5)]
+    exist_light = 0
+    if apriltag_label == 'stop':
+        order = [3, 2, 0, 0, 0]
+    else:
+        if apriltag_label == 'parking zone':
+            order[3] = None
+        else:
+            # Detect cross walk
+            result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
+            if crosswalk_order == 'crosswalk':
+                # Detect traffic light
+                result_frame, trafficlight_order = light.trafficlight_detection(frame)
+                if apriltag_label == 'go straight':
+                    if trafficlight_order != 'no light':
+                        if (trafficlight_order == 'greenlight') or (exist_light >= 300):
+                            order[2] = 2
+                            exist_light = 0
+                    else:
+                        exist_light += 1
+                elif apriltag_label == 'turn right':
+                    if trafficlight_order != 'no light':
+                        if (trafficlight_order == 'greenlight') or (exist_light >= 300):
+                            order[2] = 1
+                            exist_light = 0
+                    else:
+                        exist_light += 1
+                elif apriltag_label == 'turn left':
+                    if trafficlight_order != 'no light':
+                        if (trafficlight_order == 'greenlight') or (exist_light >= 300):
+                            order[2] = 3
+                            exist_light = 0
+                    else:
+                        exist_light += 1
+                else:
+                    order = [3, 2, 0, 0, 0]
+                    time.sleep(3) # Stop 3 seconds before crosswalk
+                    order = [steering, motor, 0, 0, 0]
+            else:
+                order = [steering, motor, 0, 0, 0]
+
+    # Check the tunnel
+    if apriltag_label == 'tunnel beginning':
+        order[4] = 1
+    elif apriltag_label == 'tunnel end':
+        order[4] = 2
+        
+    # Send order to arduino
     send_orders(order)
     
     # Show order

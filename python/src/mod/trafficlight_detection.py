@@ -58,5 +58,10 @@ def trafficlight_detection(frame):
                     if y2 < cy < trafic_y + trafic_h:
                         order = "green light"
                         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    
+                    else:
+                        order = "no light"
+            else:
+                order = "no light"
+        else:
+            order = "no light"
     return frame, order

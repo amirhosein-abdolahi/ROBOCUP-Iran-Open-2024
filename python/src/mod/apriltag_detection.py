@@ -6,9 +6,9 @@ detector = Detector(families='tag36h11')
 
 # Mach labels and april tags
 labels = {
-    0: 'tunnel Beginning',
-    1: 'tunnel End',
-    2: 'cross walk',
+    0: 'tunnel beginning',
+    1: 'tunnel end',
+    # 2: 'cross walk',
     3: 'parking zone',
     # 4: 'No-Passing Zone',
     # 5: 'Passing Zone',
