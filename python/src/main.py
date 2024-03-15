@@ -19,7 +19,7 @@ last_order = None
 def send_orders(order):
     if last_order != order:
         last_order = order
-        ser.write(str(order).encode())
+        ser.write(order.encode())
         time.sleep(.01)
 
 # Capture video from the camera (you might need to adjust the camera index)
@@ -53,15 +53,18 @@ while True:
     else:
         steering, motor = 3, 1
     
+    # :D
+    crosswalk_order = 'no crosswalk'
+    trafficlight_order = 'no light'
     
-    # 
+    # :D
     order = [None for a in range(5)]
     exist_light = 0
     if apriltag_label == 'stop':
         order = [3, 2, 0, 0, 0]
     else:
         if apriltag_label == 'parking zone':
-            order[3] = None
+            order = [3, 2, 0, 0, 0] # stop
         else:
             # Detect cross walk
             result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
@@ -71,21 +74,21 @@ while True:
                 if apriltag_label == 'go straight':
                     if trafficlight_order != 'no light':
                         if (trafficlight_order == 'greenlight') or (exist_light >= 300):
-                            order[2] = 2
+                            order = [3, 2, 2, 0, 0]
                             exist_light = 0
                     else:
                         exist_light += 1
                 elif apriltag_label == 'turn right':
                     if trafficlight_order != 'no light':
                         if (trafficlight_order == 'greenlight') or (exist_light >= 300):
-                            order[2] = 1
+                            order = [3, 2, 1, 0, 0]
                             exist_light = 0
                     else:
                         exist_light += 1
                 elif apriltag_label == 'turn left':
                     if trafficlight_order != 'no light':
                         if (trafficlight_order == 'greenlight') or (exist_light >= 300):
-                            order[2] = 3
+                            order = [3, 2, 3, 0, 0]
                             exist_light = 0
                     else:
                         exist_light += 1
@@ -102,6 +105,9 @@ while True:
     elif apriltag_label == 'tunnel end':
         order[4] = 2
         
+    # Convert list to string
+    order = "".join(map(str, order))
+    
     # Send order to arduino
     send_orders(order)
     

@@ -45,7 +45,7 @@ def apriltag_detection(frame):
                 main_size = size
     
     # Show nearest apriltag
-    label = 'no label found'
+    label = 'no sign'
     if nearest_apriltag is not None:
         cv2.polylines(frame, [nearest_apriltag.corners.astype(int)], True, (240, 130, 50), 2)
         
