@@ -9,6 +9,10 @@ import mod.crosswalk_detection as crosswalk
 import mod.apriltag_detection as apriltag
 import mod.trafficlight_detection as light
 
+# Set the robot mode 
+# modes = city, race
+mode = 'city'
+
 # Set up the serial connection to arduino
 ser = serial.Serial('COM10', 9600) # For raspberry pi '/dev/ttyUSB0'
 time.sleep(5) # Initialized the serial connection
@@ -28,7 +32,7 @@ while True:
     # Read a frame from the video stream
     ret, frame = cap.read()
     if not ret:
-        print(FileNotFoundError)
+        print('camera not found')
         break
     
     # Detect apriltag
@@ -52,61 +56,68 @@ while True:
     else:
         steering, motor = 3, 1
     
-    # :D
+    # Set default of some values
     crosswalk_order = 'no crosswalk'
     trafficlight_order = 'no light'
     
-    # :D
+    # Find the order
     order = [None for a in range(5)]
-    exist_light = 0
-    if apriltag_label == 'stop':
-        order = [3, 2, 0, 0, 0]
-    else:
-        if apriltag_label == 'parking zone':
-            if apriltag_side == 'right':
-                order = [3, 2, 0, 0, 0] # stop
-            elif apriltag_side == 'left':
-                order = [3, 2, 0, 0, 0] # stop
+    if mode == 'city': # City mode
+        exist_light = 0
+        if apriltag_label == 'stop':
+            order = [3, 2, 0, 0, 0]
         else:
-            # Detect cross walk
-            result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
-            if crosswalk_order == 'crosswalk':
-                # Detect traffic light
-                result_frame, trafficlight_order = light.trafficlight_detection(frame)
-                if apriltag_label == 'go straight':
-                    if trafficlight_order != 'no light':
-                        if (trafficlight_order == 'greenlight') or (exist_light >= 300):
-                            order = [3, 2, 2, 0, 0]
-                            exist_light = 0
-                    else:
-                        exist_light += 1
-                elif apriltag_label == 'turn right':
-                    if trafficlight_order != 'no light':
-                        if (trafficlight_order == 'greenlight') or (exist_light >= 300):
-                            order = [3, 2, 1, 0, 0]
-                            exist_light = 0
-                    else:
-                        exist_light += 1
-                elif apriltag_label == 'turn left':
-                    if trafficlight_order != 'no light':
-                        if (trafficlight_order == 'greenlight') or (exist_light >= 300):
-                            order = [3, 2, 3, 0, 0]
-                            exist_light = 0
-                    else:
-                        exist_light += 1
-                else:
-                    order = [3, 2, 0, 0, 0]
-                    time.sleep(3) # Stop 3 seconds before crosswalk
-                    order = [steering, motor, 0, 0, 0]
+            if apriltag_label == 'parking zone':
+                if apriltag_side == 'right':
+                    order = [3, 2, 0, 0, 0] # stop
+                elif apriltag_side == 'left':
+                    order = [3, 2, 0, 0, 0] # stop
             else:
-                order = [steering, motor, 0, 0, 0]
+                # Detect crosswalk
+                result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
+                if crosswalk_order == 'crosswalk':
+                    # Detect traffic light
+                    result_frame, trafficlight_order = light.trafficlight_detection(frame)
+                    if apriltag_label == 'go straight':
+                        if trafficlight_order != 'no light':
+                            if (trafficlight_order == 'greenlight') or (exist_light >= 300):
+                                order = [3, 2, 2, 0, 0]
+                                exist_light = 0
+                        else:
+                            exist_light += 1
+                    elif apriltag_label == 'turn right':
+                        if trafficlight_order != 'no light':
+                            if (trafficlight_order == 'greenlight') or (exist_light >= 300):
+                                order = [3, 2, 1, 0, 0]
+                                exist_light = 0
+                        else:
+                            exist_light += 1
+                    elif apriltag_label == 'turn left':
+                        if trafficlight_order != 'no light':
+                            if (trafficlight_order == 'greenlight') or (exist_light >= 300):
+                                order = [3, 2, 3, 0, 0]
+                                exist_light = 0
+                        else:
+                            exist_light += 1
+                    else:
+                        order = [3, 2, 0, 0, 0]
+                        time.sleep(3) # Stop 3 seconds before crosswalk
+                        order = [steering, motor, 0, 0, 0]
+                else:
+                    order = [steering, motor, 0, 0, 0]
+    
+        # Check the tunnel
+        if apriltag_label == 'tunnel beginning':
+            order[4] = 1
+        elif apriltag_label == 'tunnel end':
+            order[4] = 2
 
-    # Check the tunnel
-    if apriltag_label == 'tunnel beginning':
-        order[4] = 1
-    elif apriltag_label == 'tunnel end':
-        order[4] = 2
-        
+    elif mode == 'race': # Race mode
+        if apriltag_label == 'stop':
+            order = [3, 2, 0, 0, 0]
+        else:
+            order = [steering, motor, 0, 0, 0]
+         
     # Convert list to string
     order = "".join(map(str, order))
     
@@ -114,7 +125,7 @@ while True:
     send_orders(order)
     
     # Show order
-    text = f"{apriltag_label}\n{crosswalk_order}\n{trafficlight_order}\n{edge_order}\n{order}"
+    text = f"{mode}\n{apriltag_label}\n{crosswalk_order}\n{trafficlight_order}\n{edge_order}\n{order}"
     y0, dy = 30, 25
     for i, line in enumerate(text.split('\n')):
         y = y0 + i * dy
