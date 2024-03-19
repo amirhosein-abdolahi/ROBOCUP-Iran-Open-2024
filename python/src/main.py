@@ -1,5 +1,4 @@
 # Import libraries
-from genericpath import exists
 import cv2
 import serial
 import time
@@ -33,7 +32,7 @@ while True:
         break
     
     # Detect apriltag
-    result_frame, apriltag_label = apriltag.apriltag_detection(frame)
+    result_frame, apriltag_label, apriltag_side = apriltag.apriltag_detection(frame)
     
     # Detect and track lines with edges
     result_frame, edge_order = edge.edge_detection(frame)
@@ -64,7 +63,10 @@ while True:
         order = [3, 2, 0, 0, 0]
     else:
         if apriltag_label == 'parking zone':
-            order = [3, 2, 0, 0, 0] # stop
+            if apriltag_side == 'right':
+                order = [3, 2, 0, 0, 0] # stop
+            elif apriltag_side == 'left':
+                order = [3, 2, 0, 0, 0] # stop
         else:
             # Detect cross walk
             result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)

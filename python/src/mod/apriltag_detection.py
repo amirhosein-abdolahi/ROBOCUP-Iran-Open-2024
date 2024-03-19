@@ -46,6 +46,7 @@ def apriltag_detection(frame):
     
     # Show nearest apriltag
     label = 'no sign'
+    side = 'no sign'
     if nearest_apriltag is not None:
         cv2.polylines(frame, [nearest_apriltag.corners.astype(int)], True, (240, 130, 50), 2)
         
@@ -54,5 +55,13 @@ def apriltag_detection(frame):
             label = labels[nearest_apriltag.tag_id]
         except:
             pass
-    
-    return frame, label
+        
+        # Find the side of sign
+        center = nearest_apriltag.center.astype(int)
+        _, width = gray.shape
+        if center[0] >= width / 2:
+            side = 'right'
+        else:
+            side = 'left'
+            
+    return frame, label, side
