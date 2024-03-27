@@ -3,6 +3,10 @@ import cv2
 import numpy as np
 from mod import region_of_interest as ROI
 
+# Define some variables
+gap_right_edge = 200
+gap_left_edge = 240
+
 # Function to detrect edges
 def edge_detection(frame):
     order = "no line"
@@ -51,8 +55,8 @@ def edge_detection(frame):
                     left_lines.append(line)
                     
             # debuging
-            else:
-                cv2.line(frame, (x1, y1), (x2, y2), (255, 255, 255), 2)
+            # else:
+            #     cv2.line(frame, (x1, y1), (x2, y2), (255, 255, 255), 2)
         
         # Find the nearest line to the center of frame
         left_distance = 0
@@ -77,12 +81,12 @@ def edge_detection(frame):
         global left_edge, right_edge
         left_edge, right_edge = None, None
         if left_line is not None:
-            x1, y1, x2, y2, cx, cy = left_line
+            x1, y1, x2, y2, cx, _ = left_line
             left_edge = cx
             cv2.line(frame, (x1, y1), (x2, y2), (36, 51, 235), 5)
             
         if right_line is not None:
-            x1, y1, x2, y2, cx, cy = right_line
+            x1, y1, x2, y2, cx, _ = right_line
             right_edge = cx
             cv2.line(frame, (x1, y1), (x2, y2), (36, 51, 235), 5)
             
@@ -91,10 +95,10 @@ def edge_detection(frame):
             track_line = ((left_edge + right_edge) // 2, roi_up)
             
         elif right_edge is not None:
-            track_line = ((right_edge - 200), roi_up)
+            track_line = ((right_edge - gap_right_edge), roi_up)
             
         elif left_edge is not None:
-            track_line = ((left_edge + 260), roi_up)
+            track_line = ((left_edge + gap_left_edge), roi_up)
             
         else:
             track_line = None

@@ -12,7 +12,7 @@ def trafficlight_detection(frame):
     
     # Change frame color type and color detection for find traffic light
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    lower_red = np.array([110, 60, 138])
+    lower_red = np.array([100, 80, 70])
     upper_red = np.array([179, 255, 255])
     mask = cv2.inRange(hsv, lower_red, upper_red)
 

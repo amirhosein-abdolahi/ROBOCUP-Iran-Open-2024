@@ -8,15 +8,15 @@ detector = Detector(families='tag36h11')
 labels = {
     0: 'tunnel beginning',
     1: 'tunnel end',
-    # 2: 'cross walk',
+    2: 'cross walk',
     3: 'parking zone',
-    # 4: 'No-Passing Zone',
-    # 5: 'Passing Zone',
+    4: 'No-Passing Zone',
+    5: 'Passing Zone',
     6: 'stop',
-    # 7: 'priority over',
-    # 8: 'Bared area',
-    # 9: 'step uphill',
-    # 10: 'step downhill',
+    7: 'priority over',
+    8: 'Bared area',
+    9: 'step uphill',
+    10: 'step downhill',
     11: 'turn left',
     12: 'turn right',
     119: 'go straight',
@@ -39,7 +39,7 @@ def apriltag_detection(frame):
         dot2 = [corners[0][2][0], corners[0][2][1]]
         size = int(math.dist(dot2, dot1))
         
-        if size >= 40:
+        if size >= 100:
             if size > main_size:
                 nearest_apriltag = detection
                 main_size = size
