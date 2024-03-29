@@ -14,15 +14,15 @@ import mod.trafficlight_detection as light
 mode = 'city'
 
 # Set up the serial connection to arduino
-ser = serial.Serial(port='COM7', baudrate=9600, timeout=.1) # For raspberry pi '/dev/ttyUSB0'
+ser = serial.Serial(port='COM10', baudrate=9600, timeout=.1) # For raspberry pi '/dev/ttyUSB0'
 time.sleep(5) # Initialized the serial connection
 
 # Define some variables
 exist_light = 0
-num_no_light = 300 # Max number of not found light
+num_no_light = 100 # Max number of not found light
 
 # Function for sending orders to arduino
-def send_order(order, delay=.05):
+def send_order(order, delay=0.05):
     
     # Convert list to string
     order = "".join(map(str, order))
@@ -52,7 +52,7 @@ while True:
         break
     
     # Resize the frame
-    frame = cv2.resize(frame, (480, 360))
+    frame = cv2.resize(frame, (640, 480))
     
     # Detect apriltag
     result_frame, apriltag_label, apriltag_side = apriltag.apriltag_detection(frame)
@@ -74,6 +74,16 @@ while True:
         steering = 1
     else:
         steering = 3
+        
+    # Mapping intersection sign
+    intersection_sign = 0
+    if apriltag_label == 'go straight':
+        intersection_sign = 2
+    elif apriltag_label == 'turn right':
+        intersection_sign = 1
+    elif apriltag_label == 'turn left':
+        intersection_sign = 3
+        
     
     # Set default of some values
     crosswalk_order = 'no crosswalk'
@@ -84,47 +94,40 @@ while True:
         if apriltag_label == 'stop':
             send_order([2, 0, 0, 0, 0])
         else:
-            if apriltag_label == 'parking zone':
+            if apriltag_label == 'cross walk':
+                send_order([2, 0, 0, 0, 0], 5) # Stop 5 seconds
+                send_order([1, 0, 0, 0, 3], 1) # Go forward 1 second to skip cross walk
+            elif apriltag_label == 'tunnel beginning':
+                send_order([1, 1, 0, 0, steering])
+                # send_order([1, 0, 0, 0, 3], 1.0) # Go forward 1 second to skip apriltag
+            elif apriltag_label == 'tunnel end':
+                send_order([1, 2, 0, 0, steering])
+                # send_order([1, 0, 0, 0, 3], 1.0) # Go forward 1 second to skip apriltag
+            elif apriltag_label == 'parking zone':
                 if apriltag_side == 'right':
                     send_order([0, 0, 1, 0, 0])
                 elif apriltag_side == 'left':
                     send_order([0, 0, 2, 0, 0])
-            elif apriltag_side == 'tunnel beginning':
-                send_order([0, 1, 0, 0, 0])
-                send_order([1, 0, 0, 0, 3], 1) # Go forward 1 second to skip apriltag
-            elif apriltag_label == 'tunnel end':
-                send_order([0, 2, 0, 0, 0])
-                send_order([1, 0, 0, 0, 3], 1) # Go forward 1 second to skip apriltag
             else:
-                # Detect crosswalk
-                result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame)
+                result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame) # Detect crosswalk
                 if crosswalk_order == 'crosswalk':
-                    # Detect traffic light
-                    result_frame, trafficlight_order = light.trafficlight_detection(frame)
-                    if apriltag_label == 'go straight':
+                    send_order([2, 0, 0, 0, 3]) # Stop befor the crosswalk
+                    result_frame, trafficlight_order = light.trafficlight_detection(frame) # Detect traffic light
+                    if intersection_sign != 0 :
                         if trafficlight_order != 'no light':
-                            if (trafficlight_order == 'greenlight') or (exist_light >= num_no_light):
-                                send_order([0, 0, 0, 2, 0])
+                            if trafficlight_order == 'green light':
+                                send_order([1, 0, 0, 0, 3], 6) # Go forward for seconds
+                                send_order([0, 0, 0, intersection_sign, 0])
+                            exist_light = 0
+                        elif exist_light > num_no_light:
+                            send_order([1, 0, 0, 0, 3], 6) # Go forward for seconds
+                            send_order([0, 0, 0, intersection_sign, 0])
                             exist_light = 0
                         else:
+                            time.sleep(0.05)
                             exist_light += 1
-                    elif apriltag_label == 'turn right':
-                        if trafficlight_order != 'no light':
-                            if (trafficlight_order == 'greenlight') or (exist_light >= num_no_light):
-                                send_order([0, 0, 0, 1, 0])
-                            exist_light = 0
-                        else:
-                            exist_light += 1
-                    elif apriltag_label == 'turn left':
-                        if trafficlight_order != 'no light':
-                            if (trafficlight_order == 'greenlight') or (exist_light >= num_no_light):
-                                send_order([0, 0, 0, 3, 0])
-                            exist_light = 0
-                        else:
-                            exist_light += 1
-                    else:
-                        send_order([2, 0, 0, 0, 0], 5) # Stop 5 seconds before crosswalk
-                        send_order([1, 0, 0, 0, 3], 3) # Go forward for 3 seconds to skip crosswalk
+                    # else:
+                    #     send_order([1, 0, 0, 0, 3], 3) # Go forward for 3 seconds to skip crosswalk
                 else:
                     send_order([1, 0, 0, 0, steering]) # Go forward
 

@@ -30,7 +30,7 @@ def trafficlight_detection(frame):
     trafic_x, trafic_y, trafic_w, trafic_h= 0, 0, 0, 0
     for contour in traffic_contours:
         area = cv2.contourArea(contour)
-        if (2000 < area < 6000) and (area >= biger_area):
+        if (2000 < area < 4000) and (area >= biger_area):
             biger_area = area
             x, y, w, h = cv2.boundingRect(contour)
             trafic_x, trafic_y, trafic_w, trafic_h= x, y, w, h
@@ -52,10 +52,10 @@ def trafficlight_detection(frame):
                     if trafic_y < cy < y1:
                         order = "red light"
                         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                    if y1 <= cy <= y2:
+                    elif y1 <= cy <= y2:
                         order = "yellow light"
                         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 2)
-                    if y2 < cy < trafic_y + trafic_h:
+                    elif y2 < cy < trafic_y + trafic_h:
                         order = "green light"
                         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                     else:
