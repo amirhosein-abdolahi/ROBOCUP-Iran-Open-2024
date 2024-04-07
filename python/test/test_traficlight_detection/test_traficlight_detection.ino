@@ -10,15 +10,15 @@ void setup() {
 }
 
 void loop() {
-  digitalWrite(r, 1);
-  delay(3000);
-  digitalWrite(r, 0);
+  digitalWrite(g, 1);
+  delay(5000);
+  digitalWrite(g, 0);
 
   digitalWrite(y, 1);
-  delay(3000);
+  delay(1000);
   digitalWrite(y, 0);
 
-  digitalWrite(g, 1);
-  delay(3000);
-  digitalWrite(g, 0);
+  digitalWrite(r, 1);
+  delay(5000);
+  digitalWrite(r, 0);
 }
