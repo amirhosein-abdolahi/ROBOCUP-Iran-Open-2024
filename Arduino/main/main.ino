@@ -42,7 +42,7 @@ int motor, tunnel, park, intersection, steering;
 #define LED1 20
 #define LED2 21
 
-// test
+// BUZZER
 #define BUZZ A5
 
 // Create a display object of type TM1637Display
@@ -50,15 +50,16 @@ TM1637Display display = TM1637Display(CLK, DIO);
 
 // Setup
 void setup() {
+  
   // Serial config
   Serial.begin(9600);
   Serial.setTimeout(5);
 
-  // Motor pinmod
+  // Motor
   pinMode(M, OUTPUT);
   pinMode(E, OUTPUT);
 
-  // Servo attach
+  // Servo
   myservo.attach(9);
   myservo.write(C);
 
@@ -78,30 +79,30 @@ void setup() {
   digitalWrite(LED1, HIGH);
   digitalWrite(LED2, HIGH);
 
-  // Set the seven segment brightness to 5 (0=dimmest 7=brightest)
+  // Buzzer
+  pinMode(BUZZ, OUTPUT);
+
+  // 7-segment (0=dimmest 7=brightest)
   display.setBrightness(5);
   display.clear();
-
-  pinMode(BUZZ, OUTPUT);
 }
 
-// Main loop
 void loop() {
   
   // Get start time
   unsigned long start = millis(); // ==================================================
 
   // Check for obstacle
-  if (obstacle()) {
-    motion_func(2, steering);
-  } 
-  // Check the serial
+  if (obstacle()) motion_func(2, steering);
+
+  // Check serial
   else if (Serial.available()) {
     // Read serial and split them
     command = Serial.readStringUntil('\n');
     for (int i = 0; i < dataLength ; i++) {
       data[i] = command.substring(i, i + 1).toInt();
     }
+
     // DEBUG_ARRAY(data);
 
     // Split data to {motor},{tunnel},{park},{intersection},{steering}
@@ -123,10 +124,11 @@ void loop() {
     else if (park != 0) parking_fun(park);
     else if ((motor != 0) || (steering != 0)) motion_func(motor, steering);
 
-    // Clean serial buffer
+    // Clean serial
     Serial.flush();
   }
-  else {motion_func(motor, steering);}
+
+  else motion_func(motor, steering);
 
   // Get end time and show delay
   unsigned long end = millis(); // ==================================================
@@ -134,10 +136,14 @@ void loop() {
   // display.showNumberDec(delay);
 }
 
-// Function for ultrasonics
+
+// ========================================= //
+// ==============  Functions  ============== //
+// ========================================= //
+
 bool obstacle() {
 
-  // Left Module
+  // Left corner module
   digitalWrite(TRIG_L, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_L,  HIGH);
@@ -147,7 +153,7 @@ bool obstacle() {
 
   delay(10);
 
-  // Center Module
+  // Center module
   digitalWrite(TRIG_C, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_C,  HIGH);
@@ -157,7 +163,7 @@ bool obstacle() {
 
   delay(10);
 
-  // Right Module
+  // Right corner module
   digitalWrite(TRIG_R, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_R,  HIGH);
@@ -165,22 +171,16 @@ bool obstacle() {
   digitalWrite(TRIG_R, LOW);
   const unsigned long duration_R = pulseIn(ECHO_R, HIGH);
 
-  // Stop if obstacle found
-  if (duration_L < 1000 || duration_C < 1000 || duration_R < 1000) {
-    // digitalWrite(E, LOW);
-    // tone(buzzer, 800);
-    // delay(100);
-    return true;
-  }
-  else { // Set motor's last status again
-    return false;
-  }
+
+  if (duration_L < 1000 || duration_C < 1000 || duration_R < 1000) return true; // STOP
+  else return false; // CONTINUE
 }
 
 
-// Function for turn on/off lights
 void lights_fun(int command) {
+
   switch (command) {
+
     case 1: // lighs ON
       digitalWrite(LED1, LOW);
       digitalWrite(LED2, LOW);
@@ -193,30 +193,48 @@ void lights_fun(int command) {
   }
 }
 
-// Function for parking
+
 void parking_fun(int command) {
   switch (command) {
     // right side
     case 1:
-      for (int i = 0; i<3; i++) {
-        motion_func(1, steering);
-        delay(3000);
-        motion_func(2, steering);
-        if (park_check(1)) {
-          digitalWrite(BUZZ, HIGH);
-          delay(200);
-          digitalWrite(BUZZ, LOW);
-          delay(100);
-          digitalWrite(BUZZ, HIGH);
-          delay(200);
-          digitalWrite(BUZZ, LOW);
-          break;
-        }
-        digitalWrite(BUZZ, HIGH);
-        delay(200);
+
+      // check parking available
+      
+
+      if (park_check(1)) {
+
+        // Buzzer says OK
+        digitalWrite(BUZZ, HIGH); delay(200);
+        digitalWrite(BUZZ, LOW);  delay(100);
+        digitalWrite(BUZZ, HIGH); delay(200);
         digitalWrite(BUZZ, LOW);
+
+        // parking on the right side
+        motion_func(1, 3); delay(7000);
+        motion_func(3, 1); delay(6000);
+        motion_func(3, 5); delay(5500);
+        motion_func(1, 1); delay(1500);
+        motion_func(2, 3);
+
+        // wait for 10 seconds
+        for (int i=0; i<9; i++) {
+          digitalWrite(BUZZ, HIGH); delay(200); 
+          digitalWrite(BUZZ, LOW); delay(1000);
+        }
+
+        // get out of parking lot
+        motion_func(3, 3); delay(1500);
+        motion_func(1, 5); delay(5000);
+        motion_func(1, 1); delay(5500);
+        motion_func(2, 3);
+        break;
       }
+
+      digitalWrite(BUZZ, HIGH);
+      delay(200);
       digitalWrite(BUZZ, LOW);
+
       break;
 
     // left side
@@ -336,7 +354,7 @@ bool park_check(int side) {
       digitalWrite(TRIG_P_R, LOW);
       const unsigned long duration_P_R = pulseIn(ECHO_P_R, HIGH);
 
-      if (duration_P_R < 400) {
+      if (duration_P_R < 2000) {
         return false;
       } else {
         return true;
