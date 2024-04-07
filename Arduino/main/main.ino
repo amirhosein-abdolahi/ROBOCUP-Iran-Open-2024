@@ -195,14 +195,21 @@ void lights_fun(int command) {
 
 
 void parking_fun(int command) {
+
   switch (command) {
+
     // right side
     case 1:
 
       // check parking available
-      
+      digitalWrite(TRIG_P_R, LOW);
+      delayMicroseconds(2);
+      digitalWrite(TRIG_P_R,  HIGH);
+      delayMicroseconds(10);
+      digitalWrite(TRIG_P_R, LOW);
+      const unsigned long duration_P_R = pulseIn(ECHO_P_R, HIGH);
 
-      if (park_check(1)) {
+      if (duration_P_R < 2000) {
 
         // Buzzer says OK
         digitalWrite(BUZZ, HIGH); delay(200);
@@ -343,23 +350,23 @@ void motion_func(int motor_command, int steering_command) {
   }
 }
 
-// Function for finding parking area
-bool park_check(int side) {
-  switch (side) {
-    case 1:
-      digitalWrite(TRIG_P_R, LOW);
-      delayMicroseconds(2);
-      digitalWrite(TRIG_P_R,  HIGH);
-      delayMicroseconds(10);
-      digitalWrite(TRIG_P_R, LOW);
-      const unsigned long duration_P_R = pulseIn(ECHO_P_R, HIGH);
+// // Function for finding parking area
+// bool park_check(int side) {
+//   switch (side) {
+//     case 1:
+//       digitalWrite(TRIG_P_R, LOW);
+//       delayMicroseconds(2);
+//       digitalWrite(TRIG_P_R,  HIGH);
+//       delayMicroseconds(10);
+//       digitalWrite(TRIG_P_R, LOW);
+//       const unsigned long duration_P_R = pulseIn(ECHO_P_R, HIGH);
 
-      if (duration_P_R < 2000) {
-        return false;
-      } else {
-        return true;
-      }
+//       if (duration_P_R < 2000) {
+//         return false;
+//       } else {
+//         return true;
+//       }
 
-      break;
-  }
-}
+//       break;
+//   }
+// }
