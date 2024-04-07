@@ -1,7 +1,18 @@
 # Import libraries
 import cv2
 import serial
-import time
+from time import sleep
+from gpiozero.pins.pigpio import PiGPIOFactory
+from gpiozero import AngularServo
+
+# Config camera servo motors
+factory = PiGPIOFactory()
+servox = AngularServo(18, min_pulse_width=0.0005, max_pulse_width=0.0025, pin_factory=factory)
+servoy = AngularServo(17, min_pulse_width=0.0005, max_pulse_width=0.0025, pin_factory=factory)
+xangle = -10
+yangle = 20
+servox.angle = xangle
+servoy.angle = yangle
 
 # Import modules
 import mod.edge_detection as edge
@@ -15,10 +26,10 @@ mode = 'city'
 
 # Set up the serial connection to arduino
 ser = serial.Serial(port='COM10', baudrate=9600, timeout=.1) # For raspberry pi '/dev/ttyUSB0'
-time.sleep(5) # Initialized the serial connection
+sleep(5) # Initialized the serial connection
 
 # Define some variables
-exist_light = 0
+num_light = 0
 num_no_light = 100 # Max number of not found light
 
 # Function for sending orders to arduino
@@ -29,7 +40,7 @@ def send_order(order, delay=0.05):
     
     # Send order to arduino
     ser.write(order.encode())
-    time.sleep(delay)
+    sleep(delay)
         
     # Show order
     if mode == 'city':
@@ -44,6 +55,7 @@ def send_order(order, delay=0.05):
 # Capture video from the camera (you might need to adjust the camera index)
 cap = cv2.VideoCapture(0)
 
+# Main loop
 while True:
     # Read a frame from the video stream
     ret, frame = cap.read()
@@ -61,30 +73,25 @@ while True:
     result_frame, edge_order = edge.edge_detection(frame)
     
     # Maping edge order with number
-    steering = 0
-    if edge_order == 'forward':
-        steering = 3
-    elif edge_order == 'right':
-        steering = 4
-    elif edge_order == 'left':
-        steering = 2
-    elif edge_order == 'right right':
-        steering = 5
-    elif edge_order == 'left left':
-        steering = 1
-    else:
-        steering = 3
+    steering = {
+        'forward': 3,
+        'right': 4,
+        'left': 2,
+        'right right': 5,
+        'left left': 1
+    }
+    steering_order = 3
+    if edge_order in steering:
+        steering_order = steering.get(edge_order)
         
     # Mapping intersection sign
-    intersection_sign = 0
-    if apriltag_label == 'go straight':
-        intersection_sign = 2
-    elif apriltag_label == 'turn right':
-        intersection_sign = 1
-    elif apriltag_label == 'turn left':
-        intersection_sign = 3
+    sign_order = 0
+    intersection_sign = {
+        'go straight': 2,
+        'turn right': 1,
+        'turn left': 3
+    }
         
-    
     # Set default of some values
     crosswalk_order = 'no crosswalk'
     trafficlight_order = 'no light'
@@ -98,10 +105,10 @@ while True:
                 send_order([2, 0, 0, 0, 0], 5) # Stop 5 seconds
                 send_order([1, 0, 0, 0, 3], 1) # Go forward 1 second to skip cross walk
             elif apriltag_label == 'tunnel beginning':
-                send_order([1, 1, 0, 0, steering])
+                send_order([1, 1, 0, 0, steering_order])
                 # send_order([1, 0, 0, 0, 3], 1.0) # Go forward 1 second to skip apriltag
             elif apriltag_label == 'tunnel end':
-                send_order([1, 2, 0, 0, steering])
+                send_order([1, 2, 0, 0, steering_order])
                 # send_order([1, 0, 0, 0, 3], 1.0) # Go forward 1 second to skip apriltag
             elif apriltag_label == 'parking zone':
                 if apriltag_side == 'right':
@@ -112,30 +119,51 @@ while True:
                 result_frame, crosswalk_order = crosswalk.crosswalk_detection(frame) # Detect crosswalk
                 if crosswalk_order == 'crosswalk':
                     send_order([2, 0, 0, 0, 3]) # Stop befor the crosswalk
-                    result_frame, trafficlight_order = light.trafficlight_detection(frame) # Detect traffic light
-                    if intersection_sign != 0 :
+                    servox.angle = -30 # Move camera to detect apriltag
+                    sleep(1)
+                    while True:
+                        _, frame = cap.read()
+                        frame = cv2.resize(frame, (640, 480))
+                        result_frame, apriltag_label, apriltag_side = apriltag.apriltag_detection(frame) # Detect apriltag
+                        if apriltag_label in intersection_sign:
+                            sign_order = intersection_sign.get(apriltag_label)
+                            sleep(1)
+                            break
+                    servox.angle = xangle # Reset camera position
+                    servoy.angle = -10 # Move camera to detect traffic light
+                    sleep(1)
+                    while True:
+                        _, frame = cap.read()
+                        frame = cv2.resize(frame, (640, 480))
+                        result_frame, trafficlight_order = light.trafficlight_detection(frame) # Detect traffic light
+                        print(trafficlight_order) # Debuging
+                        print(num_light) # Debuging
                         if trafficlight_order != 'no light':
                             if trafficlight_order == 'green light':
-                                send_order([1, 0, 0, 0, 3], 6) # Go forward for seconds
-                                send_order([0, 0, 0, intersection_sign, 0])
-                            exist_light = 0
-                        elif exist_light > num_no_light:
-                            send_order([1, 0, 0, 0, 3], 6) # Go forward for seconds
-                            send_order([0, 0, 0, intersection_sign, 0])
-                            exist_light = 0
+                                servoy.angle = yangle # Reset camera position
+                                sleep(1)
+                                send_order([1, 0, 0, 0, 3], 4.5) # Go forward for secends
+                                send_order([0, 0, 0, sign_order, 0])
+                                num_light = 0
+                                break
+                        elif num_light > num_no_light:
+                            servoy.angle = yangle # Reset camera position
+                            sleep(1)
+                            send_order([1, 0, 0, 0, 3], 4.5) # Go forward for secends
+                            send_order([0, 0, 0, sign_order, 0])
+                            num_light = 0
+                            break
                         else:
-                            time.sleep(0.05)
-                            exist_light += 1
-                    # else:
-                    #     send_order([1, 0, 0, 0, 3], 3) # Go forward for 3 seconds to skip crosswalk
+                            sleep(0.05)
+                            num_light += 1
                 else:
-                    send_order([1, 0, 0, 0, steering]) # Go forward
+                    send_order([1, 0, 0, 0, steering_order]) # Go forward
 
     elif mode == 'race': # Race mode
         if apriltag_label == 'stop':
             send_order([2, 0, 0, 0, 0])
         else:
-            send_order([1, 0, 0, 0, steering]) # Go forward
+            send_order([1, 0, 0, 0, steering_order]) # Go forward
 
     # Display the frames
     cv2.imshow('result', result_frame)
