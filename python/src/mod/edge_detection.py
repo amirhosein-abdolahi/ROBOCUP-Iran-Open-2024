@@ -5,7 +5,9 @@ from mod import region_of_interest as ROI
 
 # Define some variables
 gap_right_edge = 200
-gap_left_edge = 240
+gap_left_edge = 290
+best_pos = 110
+normal_pos = 190
 
 # Function to detrect edges
 def edge_detection(frame):
@@ -108,8 +110,8 @@ def edge_detection(frame):
             cv2.line(frame, (width // 2, height), track_line, (255, 0, 255), 6)
             
             # Draw range of track
-            best_range = (width - 50) // 2
-            normal_range = (width - 150) // 2
+            best_range = (width - best_pos) // 2
+            normal_range = (width - normal_pos) // 2
             cv2.line(frame, (best_range, roi_up + 20), (best_range, roi_up - 20), (77, 249, 117), 5)
             cv2.line(frame, (width - best_range, roi_up + 20), (width - best_range, roi_up - 20), (77, 249, 117), 5)
             cv2.line(frame, (normal_range, roi_up + 20), (normal_range, roi_up - 20), (80, 134, 240), 5)
