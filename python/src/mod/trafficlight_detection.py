@@ -55,4 +55,4 @@ def trafficlight_detection(frame):
                         order = "green light"
                         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-    return frame, order
+    return order

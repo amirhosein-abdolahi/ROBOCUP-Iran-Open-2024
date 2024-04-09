@@ -49,4 +49,4 @@ def crosswalk_detection(frame):
         else:
             order = "no crosswalk"
     
-    return frame, order
+    return order

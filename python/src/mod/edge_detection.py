@@ -6,11 +6,9 @@ from mod import region_of_interest as ROI
 # Define some variables
 gap_right_edge = 200
 gap_left_edge = 290
-best_pos = 110
-normal_pos = 190
 
 # Function to detrect edges
-def edge_detection(frame):
+def edge_detection(frame, best_pos, normal_pos):
     order = "no line"
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -132,4 +130,4 @@ def edge_detection(frame):
             else:
                 order = "no line"
             
-    return frame, order
+    return order

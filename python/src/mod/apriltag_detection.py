@@ -4,6 +4,9 @@ import cv2
 import math
 detector = Detector(families='tag36h11')
 
+# Define gap of sign
+min_size = 80
+
 # Mach labels and april tags
 labels = {
     0: 'tunnel beginning',
@@ -19,7 +22,7 @@ labels = {
     10: 'step downhill',
     11: 'turn left',
     12: 'turn right',
-    119: 'go straight',
+    13: 'go straight',
 }
 
 # Functions for detect apriltag
@@ -39,7 +42,7 @@ def apriltag_detection(frame):
         dot2 = [corners[0][2][0], corners[0][2][1]]
         size = int(math.dist(dot2, dot1))
         
-        if size >= 100:
+        if size >= min_size:
             if size > main_size:
                 nearest_apriltag = detection
                 main_size = size
@@ -64,4 +67,4 @@ def apriltag_detection(frame):
         else:
             side = 'left'
             
-    return frame, label, side
+    return label, side
