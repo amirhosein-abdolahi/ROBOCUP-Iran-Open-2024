@@ -19,10 +19,11 @@ import mod.edge_detection as edge
 import mod.crosswalk_detection as crosswalk
 import mod.apriltag_detection as apriltag
 import mod.trafficlight_detection as light
+import mod.edge_detection_race as race
 
 # Set the robot mode 
 # modes = city, race
-mode = 'city'
+mode = 'race'
 
 # Set up the serial connection to arduino
 ser = serial.Serial(port='/dev/ttyUSB0', baudrate=9600, timeout=.1) # For raspberry pi '/dev/ttyUSB0'
@@ -95,7 +96,10 @@ while True:
     apriltag_label, apriltag_side = apriltag.apriltag_detection(frame)
     
     # Detect and track lines with edges
-    edge_order = edge.edge_detection(frame, best_pos, normal_pos)
+    if mode == 'city':
+        edge_order = edge.edge_detection(frame, best_pos, normal_pos)
+    elif mode == 'race':
+        edge_order, xangle = race.detection(frame, servox, xangle)
     
     # Maping edge order with number
     steering = {

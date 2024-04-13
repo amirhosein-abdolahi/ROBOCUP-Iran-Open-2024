@@ -11,7 +11,7 @@ void setup() {
 
 void loop() {
   digitalWrite(g, 1);
-  delay(5000);
+  delay(10000);
   digitalWrite(g, 0);
 
   digitalWrite(y, 1);
@@ -19,6 +19,6 @@ void loop() {
   digitalWrite(y, 0);
 
   digitalWrite(r, 1);
-  delay(5000);
+  delay(10000);
   digitalWrite(r, 0);
 }
