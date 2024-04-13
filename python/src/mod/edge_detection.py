@@ -1,23 +1,25 @@
-# Import ibrari
+# Import libraries
 import cv2
 import numpy as np
 from mod import region_of_interest as ROI
 
 # Define some variables
 gap_right_edge = 200
-gap_left_edge = 290
+gap_left_edge = 200
 
-# Function to detrect edges
+# Function to detect edges
 def edge_detection(frame, best_pos, normal_pos):
     order = "no line"
+    
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # Apply GaussianBlur to reduce noise and help with edge detection
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    # Apply bilateral filter to reduce noise and help with edge detection
+    bilateral = cv2.bilateralFilter(gray, d=9, sigmaColor=75, sigmaSpace=75)
+    # blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
     # Perform edge detection using canny
-    edges = cv2.Canny(blurred, 50, 150)
+    edges = cv2.Canny(bilateral, 50, 150)
     
     # Define region of interests (ROI) to focus on the lines
     height, width = gray.shape
