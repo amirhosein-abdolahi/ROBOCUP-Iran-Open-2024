@@ -5,28 +5,30 @@ from mod import region_of_interest as ROI
 
 # Define some variables
 gap_right_edge = 200
-gap_left_edge = 200
+gap_left_edge = 270
+wide_gap = 150
 
 # Function to detect edges
-def detection(frame, servo, last_angle):
-    order = "no line"
+def detection(frame, best_pos, normal_pos, order):
+    # order = "no line"
     
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     
-    # Apply GaussianBlur to reduce noise and help with edge detection
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    # Apply bilateral filter to reduce noise and help with edge detection
+    bilateral = cv2.bilateralFilter(gray, d=9, sigmaColor=75, sigmaSpace=75)
+    # blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     
     # Perform edge detection using canny
-    edges = cv2.Canny(blurred, 50, 150)
+    edges = cv2.Canny(bilateral, 50, 150)
     
     # Define region of interests (ROI) to focus on the lines
     height, width = gray.shape
-    roi_up = (height // 5) * 3
-    roi_down = height - 30
-    width_of_roi = (width - 200) // 2 
-    roi1_vertices = [(0, roi_down), (0, roi_up), (width_of_roi, roi_up), (width_of_roi, roi_down)]
-    roi2_vertices = [(width, roi_down), (width, roi_up), (width - width_of_roi, roi_up), (width - width_of_roi, roi_down)]
+    roi_up = height - 80
+    roi_down = height
+    width_of_roi = (width - 20) // 2 
+    roi1_vertices = [(0, roi_down), (0, roi_up), (width_of_roi - wide_gap, roi_up), (width_of_roi, roi_down)]
+    roi2_vertices = [(width, roi_down), (width, roi_up), (width - width_of_roi + wide_gap, roi_up), (width - width_of_roi, roi_down)]
     roi1, frame = ROI.region_of_interest(edges, frame, roi1_vertices)
     roi2, frame = ROI.region_of_interest(edges, frame, roi2_vertices)
     roi = cv2.add(roi1, roi2)
@@ -35,7 +37,7 @@ def detection(frame, servo, last_angle):
     # threshold: The minimum number of intersections to "*detect*" a line
     # minLineLength: The minimum number of points that can form a line. Lines with less than this number of points are disregarded.
     # maxLineGap: The maximum gap between two points to be considered in the same line.
-    lines= cv2.HoughLinesP(roi, 1, np.pi/180, threshold=30, minLineLength=10, maxLineGap=30)
+    lines= cv2.HoughLinesP(roi, 1, np.pi/180, threshold=10, minLineLength=10, maxLineGap=30)
     
     # Draw the detected lines on the original image
     if lines is not None:
@@ -91,7 +93,7 @@ def detection(frame, servo, last_angle):
             x1, y1, x2, y2, cx, _ = right_line
             right_edge = cx
             cv2.line(frame, (x1, y1), (x2, y2), (36, 51, 235), 5)
-        
+            
         # Find the track line
         if left_edge is not None and right_edge is not None:
             track_line = ((left_edge + right_edge) // 2, roi_up)
@@ -104,37 +106,32 @@ def detection(frame, servo, last_angle):
             
         else:
             track_line = None
-    
+        
         # Draw the track line
         if track_line is not None:
             cv2.line(frame, (width // 2, height), track_line, (255, 0, 255), 6)
             
-            # Draw range of track line
-            track_range = (width - 40) // 2
-            cv2.line(frame, (track_range, roi_up + 20), (track_range, roi_up - 20), (77, 249, 117), 5)
-            cv2.line(frame, (width - track_range, roi_up + 20), (width - track_range, roi_up - 20), (77, 249, 117), 5)
-            
-            # Change camera state
+            # Draw range of track
+            best_range = (width - best_pos) // 2
+            normal_range = (width - normal_pos) // 2
+            cv2.line(frame, (best_range, roi_up + 20), (best_range, roi_up - 20), (77, 249, 117), 5)
+            cv2.line(frame, (width - best_range, roi_up + 20), (width - best_range, roi_up - 20), (77, 249, 117), 5)
+            cv2.line(frame, (normal_range, roi_up + 20), (normal_range, roi_up - 20), (80, 134, 240), 5)
+            cv2.line(frame, (width - normal_range, roi_up + 20), (width - normal_range, roi_up - 20), (80, 134, 240), 5)
+        
+            # Get order
             track = track_line[0]
-            if track < track_range:
-                last_angle += 2
-                servo.angle = last_angle
-            elif width - track_range < track:
-                last_angle -= 2
-                servo.angle = last_angle
-            
-            # Send order
-            if -35 <= last_angle <= 15:
+            if best_range <= track <= width - best_range:
                 order = "forward"
-            elif -45 <= last_angle < -35:
-                order = "left"
-            elif 15 < last_angle <= 25:
+            elif normal_range <= track < best_range:
                 order = "right"
-            elif last_angle < -45:
-                order = "left left"
-            elif 25 < last_angle:
+            elif width - best_range < track <= width - normal_range:
+                order = "left"
+            elif track < normal_range:
                 order = "right right"
-            else:
-                order = "no line"
+            elif width - normal_range < track:
+                order = "left left"
+            # else:
+            #     order = "no line"
             
-    return order, last_angle
+    return order

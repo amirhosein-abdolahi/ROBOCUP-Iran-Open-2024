@@ -1,5 +1,6 @@
 # Import libraries
 import cv2
+import numpy as np
 import serial
 from time import sleep
 from gpiozero.pins.pigpio import PiGPIOFactory
@@ -23,7 +24,8 @@ import mod.edge_detection_race as race
 
 # Set the robot mode 
 # modes = city, race
-mode = 'race'
+mode = 'city'
+edge_order = 'forward'
 
 # Set up the serial connection to arduino
 ser = serial.Serial(port='/dev/ttyUSB0', baudrate=9600, timeout=.1) # For raspberry pi '/dev/ttyUSB0'
@@ -32,6 +34,10 @@ sleep(5) # Initialized the serial connection
 # Define some variables for traffic light
 num_light = 0
 num_no_light = 100 # Max number of not found light
+
+# Define some variables for sign
+num_sign = 0
+num_no_sign = 100 # Max number of not found sign
 
 # Define some variables for parking
 sign_to_first = 90
@@ -43,9 +49,9 @@ if mode == 'city':
     best_pos = 40
     normal_pos = 140
 elif mode == 'race':
-    best_pos = 110
-    normal_pos = 190
-
+    best_pos = 130
+    normal_pos = 180
+    
 # Function for sending orders to arduino
 def send_order(order, delay=0.05):
     
@@ -75,12 +81,17 @@ def go_forward(time):
     while delay_time < (time * 20):
         _, frame = cap.read()
         frame = cv2.resize(frame, (640, 480))
-        edge_order = edge.edge_detection(frame, best_pos, normal_pos) # Detete edge 
+        edge_order = edge.edge_detection(frame, best_pos, normal_pos) # Detete edge
         if edge_order in steering:
             steering_order = steering.get(edge_order)
             send_order([1, 0, 0, 0, steering_order]) # Go foward
         delay_time += 1
-
+        
+        # Show frame
+        cv2.putText(frame, "GO FORWARD", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (128, 54, 234), 5)
+        cv2.imshow('result', frame)
+        cv2.waitKey(1)
+        
 # Main loop
 while True:
     # Read a frame from the video stream
@@ -99,7 +110,7 @@ while True:
     if mode == 'city':
         edge_order = edge.edge_detection(frame, best_pos, normal_pos)
     elif mode == 'race':
-        edge_order, xangle = race.detection(frame, servox, xangle)
+        edge_order = race.detection(frame, best_pos, normal_pos, edge_order)
     
     # Maping edge order with number
     steering = {
@@ -189,10 +200,25 @@ while True:
                         _, frame = cap.read()
                         frame = cv2.resize(frame, (640, 480))
                         apriltag_label, apriltag_side = apriltag.apriltag_detection(frame) # Detect apriltag
+                        print(apriltag_label) # Debuging
+                        print(num_sign) # Debuging
                         if apriltag_label in intersection_sign:
                             sign_order = intersection_sign.get(apriltag_label)
+                            num_sign = 0
                             sleep(1)
                             break
+                        elif num_sign > num_no_sign:
+                            sign_order = 2 # Go straight
+                            num_sign = 0
+                            sleep(1)
+                            break
+                        else:
+                            sleep(0.05)
+                            num_sign += 1
+                        # Show frame
+                        cv2.putText(frame, "SIGN CHECK", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (128, 54, 234), 5)
+                        cv2.imshow('result', frame)
+                        cv2.waitKey(1)
                     servox.angle = xangle # Reset camera position
                     servoy.angle = -10 # Move camera to detect traffic light
                     sleep(1)
@@ -220,22 +246,26 @@ while True:
                         else:
                             sleep(0.05)
                             num_light += 1
+                        # Show frame
+                        cv2.putText(frame, "LIGHT CHECK", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (128, 54, 234), 5)
+                        cv2.imshow('result', frame)
+                        cv2.waitKey(1)
                 else:
                     send_order([1, 0, 0, 0, steering_order]) # Go forward
-
+                    
     elif mode == 'race': # Race mode
         if apriltag_label == 'stop':
             send_order([2, 0, 0, 0, 0])
         else:
             send_order([1, 0, 0, 0, steering_order]) # Go forward
-
+            
     # Display the frames
     cv2.imshow('result', frame)
     
     # Break the loop if 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
+    
 # Release the video capture object and close windows
 cap.release()
 cv2.destroyAllWindows()
