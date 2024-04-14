@@ -9,6 +9,7 @@ def get_hsv_values(val):
 
 # Create a window to display the image
 cv2.namedWindow('image')
+cv2.resizeWindow('image', 400, 300)
 
 
 # Load the image
@@ -32,7 +33,10 @@ cv2.createTrackbar('V max', 'image', 255, 255, get_hsv_values)
 
 while True:
     # :D
-    _, image = webcam.read() 
+    _, image = webcam.read()
+    
+    # Resize the frmae
+    image = cv2.resize(image, (640, 480))
 
     # Convert the image to HSV
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -56,7 +60,7 @@ while True:
     result = cv2.bitwise_and(image, image, mask=mask)
 
     # Show the image, the mask, and the result
-    cv2.imshow("orginal", image)
+    # cv2.imshow("orginal", image)
     cv2.imshow("mask", mask)
     cv2.imshow('result', result)
 

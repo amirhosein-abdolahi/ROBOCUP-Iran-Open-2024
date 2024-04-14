@@ -1,12 +1,33 @@
 import cv2
 import numpy as np
 from statistics import mean
+import time
+import serial
 
-# :D
-url = "http://192.168.1.103:4747/video"
+# Gap size between one line and center
+line_gap = None
+
+# Set up the serial connection to arduino
+ser = serial.Serial('/dev/ttyUSB0', 9600)
+time.sleep(5)
+
+# Send csv type data to Arduino
+def sender(value):
+    if value == "Go forward":
+        ser.write("center,forward\n".encode())
+
+    elif value == "Turn left":
+        ser.write("left,forward\n".encode())
+
+    elif value == "Turn right":
+        ser.write("right,forward\n".encode())
+        
+    time.sleep(0.01)
+    # print(value)
+
 
 # Capture video from the camera (you might need to adjust the camera index)
-cap = cv2.VideoCapture(url)
+cap = cv2.VideoCapture(0)
 
 while True:
     # Read a frame from the video stream
@@ -22,7 +43,8 @@ while True:
 
     # Define a region of interest (ROI) to focus on the lanes
     height, width = blurred.shape
-    roi_vertices = [(0, height), (width / 3, height / 2) ,((width / 3) * 2, height / 2), (width, height)]
+    roi_up = (height // 3) * 2
+    roi_vertices = [(0, height), (0, roi_up) ,(width, roi_up), (width, height)]
     roi_array_vertices = [np.array(roi_vertices, np.int32)]
     roi_mask = np.zeros_like(blurred)
     cv2.fillPoly(roi_mask, roi_array_vertices, 255)
@@ -34,8 +56,8 @@ while True:
     # Draw two edge lines
     left_edge = (width // 2) - 20
     right_edge = (width // 2) + 20
-    cv2.line(frame, (left_edge, height // 2), (left_edge, height), (255, 0, 255), 2)
-    cv2.line(frame, (right_edge, height // 2), (right_edge, height), (255, 0, 255), 2)
+    cv2.line(frame, (left_edge, roi_up), (left_edge, height), (255, 0, 255), 2)
+    cv2.line(frame, (right_edge, roi_up), (right_edge, height), (255, 0, 255), 2)
 
     # Thresholding to create a binary image
     _, binary = cv2.threshold(roi, 200, 255, cv2.THRESH_BINARY)
@@ -85,6 +107,7 @@ while True:
         right_center = None
 
     # Find center of track and draw center line and X on center line
+    line_gap = width // 2 if line_gap is None else line_gap
     center_x = None
     center_y = None
     try :
@@ -92,21 +115,22 @@ while True:
         center_y = int(mean([left_center[1], right_center[1]]))
         cv2.line(frame, (center_x + 8, center_y + 8), (center_x - 8, center_y - 8), (0, 0, 255), 2)
         cv2.line(frame, (center_x + 8, center_y - 8), (center_x - 8, center_y + 8), (0, 0, 255), 2)
-        cv2.line(frame, (center_x, height // 2), (center_x, height), (255, 255, 0), 2)
+        cv2.line(frame, (center_x, roi_up), (center_x, height), (255, 255, 0), 2)
+        line_gap = right_center[0] - center_x
     except :
         try :
-            center_x = right_center[0] - 180
+            center_x = right_center[0] - line_gap
             center_y = right_center[1]
             cv2.line(frame, (center_x + 8, center_y + 8), (center_x - 8, center_y - 8), (0, 0, 255), 2)
             cv2.line(frame, (center_x + 8, center_y - 8), (center_x - 8, center_y + 8), (0, 0, 255), 2)
-            cv2.line(frame, (center_x, height // 2), (center_x, height), (255, 255, 0), 2)
+            cv2.line(frame, (center_x, roi_up), (center_x, height), (255, 255, 0), 2)
         except :
             try :
-                center_x = left_center[0] + 180
+                center_x = left_center[0] + line_gap
                 center_y = left_center[1]
                 cv2.line(frame, (center_x + 8, center_y + 8), (center_x - 8, center_y - 8), (0, 0, 255), 2)
                 cv2.line(frame, (center_x + 8, center_y - 8), (center_x - 8, center_y + 8), (0, 0, 255), 2)
-                cv2.line(frame, (center_x, height // 2), (center_x, height), (255, 255, 0), 2)
+                cv2.line(frame, (center_x, roi_up), (center_x, height), (255, 255, 0), 2)
             except :
                 pass
 
@@ -122,7 +146,10 @@ while True:
         elif center_x >= right_edge:
             movement_order = "Turn right"
 
-        cv2.putText(frame, movement_order, (width // 3, (height // 2) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
+        # Show and send csv type data to arduino
+        cv2.putText(frame, movement_order, (0, (roi_up) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
+        sender(movement_order)
+
     except :
         pass
 
