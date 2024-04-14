@@ -1,47 +1,67 @@
+// Include lib
+#include <TM1637Display.h>
 #include <Servo.h>
-#include <LiquidCrystal.h>
-
-// Debugger
-#define DEBUG true
-
-// LiquidCrystal lcd(2, 3, 4, 5, 6, 7);
-// LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-// LiquidCrystal lcd(RS(D), E(PWM), D4(PWM), D5(PWM), D6(D), D7(D));
-
-// Defining values
 Servo myservo;
-String command;
-int stop_, tunnel_, park_, intersection_, motor_, steering_;
 
-// UltraSonic Pins
-#define ECHO_L 23
-#define TRIG_L 22
-#define ECHO_C 25
-#define TRIG_C 24
-#define ECHO_R 27
-#define TRIG_R 26
-#define ECHO_P_R 29
-#define TRIG_P_R 28
+// Debuging functions
+#define DEBUG_ARRAY(a) {for (int index = 0; index < sizeof(a) / sizeof(a[0]); index++)   {Serial.print(a[index]); Serial.print('\t');} Serial.println();};
+#define DEBUG_COMMAND(a, index) {display.showNumberDec(a, false, 1, index);};
 
-// Motor Pins
-// M => direction - E => intensity
+// Declared some variables
+String command = "";
+const int dataLength = 5;
+int data[dataLength];
+int motor, tunnel, park, intersection, steering;
+
+// Motor pins
 #define E 11
 #define M 13
 
-// Steering
+// Steering pins
 #define RR 70
 #define R 90
-#define C 105
+#define C 110
 #define L 130
 #define LL 160
 
-#define LED 40
+// UltraSonic Pins
+#define TRIG_L 22
+#define ECHO_L 23
+#define TRIG_C 24
+#define ECHO_C 25
+#define TRIG_R 26
+#define ECHO_R 27
+#define TRIG_P_R 28
+#define ECHO_P_R 29
 
+// Seven segment pins
+#define CLK 3
+#define DIO 2
+
+// LED pins
+#define LED1 20
+#define LED2 21
+
+// BUZZER
+#define BUZZ A5
+
+// Create a display object of type TM1637Display
+TM1637Display display = TM1637Display(CLK, DIO);
+
+// Setup
 void setup() {
+  
+  // Serial config
+  Serial.begin(9600);
+  Serial.setTimeout(5);
 
   // Motor
   pinMode(M, OUTPUT);
   pinMode(E, OUTPUT);
+
+  // Servo
+  myservo.attach(9);
+  myservo.write(C);
 
   // UltraSonic
   pinMode(TRIG_L, OUTPUT);
@@ -50,53 +70,80 @@ void setup() {
   pinMode(ECHO_C, INPUT);
   pinMode(TRIG_R, OUTPUT);
   pinMode(ECHO_R, INPUT);
-  pinMode(TRIG_P_R, INPUT);
+  pinMode(TRIG_P_R, OUTPUT);
   pinMode(ECHO_P_R, INPUT);
 
-  pinMode(LED, OUTPUT);
+  // LEDs
+  pinMode(LED1, OUTPUT);
+  pinMode(LED2, OUTPUT);
+  digitalWrite(LED1, HIGH);
+  digitalWrite(LED2, HIGH);
 
-  // Servo
-  myservo.attach(9);
-  myservo.write(C);
+  // Buzzer
+  pinMode(BUZZ, OUTPUT);
 
-  // Serial
-  Serial.begin(9600);
-
-  // // LCD
-  // lcd.begin(16, 2);
-  // lcd.clear();
-  // lcd.print("Hello World!");
-
-  // digitalWrite(M, HIGH);
-  // digitalWrite(E, HIGH);
-  // myservo.write(135);
-
-  if (DEBUG) Serial.println("Debug ON!");
+  // 7-segment (0=dimmest 7=brightest)
+  display.setBrightness(5);
+  display.clear();
 }
 
 void loop() {
+  
+  // Get start time
+  unsigned long start = millis(); // ==================================================
 
   // Check for obstacle
-  if (obstacle()) {
-    motor(2);
-  } else {
-    motor(motor_);
+  if (obstacle()) motion_func(2, steering);
+
+  // Check serial
+  else if (Serial.available()) {
+    // Read serial and split them
+    command = Serial.readStringUntil('\n');
+    for (int i = 0; i < dataLength ; i++) {
+      data[i] = command.substring(i, i + 1).toInt();
+    }
+
+    // DEBUG_ARRAY(data);
+
+    // Split data to {motor},{tunnel},{park},{intersection},{steering}
+    motor = data[0];
+    tunnel = data[1];
+    park = data[2];
+    intersection = data[3];
+    steering = data[4];
+
+    // Show command
+    DEBUG_COMMAND(motor, 0);
+    DEBUG_COMMAND(park, 1);
+    DEBUG_COMMAND(intersection, 2);
+    DEBUG_COMMAND(steering, 3);
+
+    // Execute the commands
+    if (tunnel != 0) lights_fun(tunnel);
+    else if (intersection != 0) intersection_fun(intersection);
+    else if (park != 0) parking_fun(park);
+    else if ((motor != 0) || (steering != 0)) motion_func(motor, steering);
+
+    // Clean serial
+    Serial.flush();
   }
 
-  // Commander
-  while (Serial.available()) {
-    if (DEBUG) Serial.println("Serial.available()");
-    commander();
-  }
+  else motion_func(motor, steering);
 
-  delay(1);
+  // Get end time and show delay
+  unsigned long end = millis(); // ==================================================
+  int delay = end - start;
+  // display.showNumberDec(delay);
 }
 
 
+// ========================================= //
+// ==============  Functions  ============== //
+// ========================================= //
 
 bool obstacle() {
 
-  // Left Module
+  // Left corner module
   digitalWrite(TRIG_L, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_L,  HIGH);
@@ -106,7 +153,7 @@ bool obstacle() {
 
   delay(10);
 
-  // Center Module
+  // Center module
   digitalWrite(TRIG_C, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_C,  HIGH);
@@ -116,7 +163,7 @@ bool obstacle() {
 
   delay(10);
 
-  // Right Module
+  // Right corner module
   digitalWrite(TRIG_R, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_R,  HIGH);
@@ -124,111 +171,77 @@ bool obstacle() {
   digitalWrite(TRIG_R, LOW);
   const unsigned long duration_R = pulseIn(ECHO_R, HIGH);
 
-  // Stop if obstacle found
-  if (duration_L < 1000 || duration_C < 1000 || duration_R < 1000) {
-    // digitalWrite(E, LOW);
-    // tone(buzzer, 800);
-    // delay(100);
-    return true;
-  }
-  else { // Set motor's last status again
-    return false;
-  }
+
+  if (duration_L < 1000 || duration_C < 1000 || duration_R < 1000) return true; // STOP
+  else return false; // CONTINUE
 }
 
 
-void commander() {
+void lights_fun(int command) {
 
-  // Read command
-  // (motor)(tunnel)(park)(intersection)(steering)
-  command = Serial.readStringUntil("\n");
-  if (DEBUG) Serial.println("command: "+command);
-  // lcd.clear();
-  // lcd.print(command);
+  switch (command) {
 
-  // Parameters
-  motor_ = command.substring(0, 1).toInt();
-  tunnel_ = command.substring(1, 2).toInt();
-  park_ = command.substring(2, 3).toInt();
-  intersection_ = command.substring(3, 4).toInt();
-  steering_ = command.substring(4, 5).toInt();
-
-  if (DEBUG) Serial.println("motor: "+String(motor_)+" | tunnel: "+String(tunnel_)+" | park: "+String(park_)+" | intersection: "+String(intersection_)+" | steering: "+String(steering_));
-
-  // Call the action
-  if (motor_ != 0) motor(motor_);
-  else if (tunnel_ != 0) tunnel(tunnel_);
-  else if (park_ != 0) park(park_);
-  else if (intersection_ != 0) intersection(intersection_);
-  else if (steering_ != 0) steering(steering_);
-
-  Serial.flush();
-}
-
-void motor(int c) {
-
-  switch (c) {
-
-    case 1: // forward
-      digitalWrite(M, HIGH);
-      digitalWrite(E, HIGH);
-      break;
-
-    case 2: // stop
-      digitalWrite(M, HIGH);
-      digitalWrite(E, LOW);
-      break;
-
-    case 3: // backward
-      digitalWrite(M, LOW);
-      digitalWrite(E, HIGH);
-      break;
-  }
-}
-
-void tunnel(int c) {
-
-  switch (c) {
-  
     case 1: // lighs ON
-      digitalWrite(52, HIGH);
-      digitalWrite(53, HIGH);
+      digitalWrite(LED1, LOW);
+      digitalWrite(LED2, LOW);
       break;
 
     case 2: // lights OFF
-      digitalWrite(52, LOW);
-      digitalWrite(53, LOW);
+      digitalWrite(LED1, HIGH);
+      digitalWrite(LED2, HIGH);
       break;
   }
 }
 
-void park(int c) {
 
-  switch (c) {
-  
+void parking_fun(int command) {
+
+  switch (command) {
+
     // right side
     case 1:
 
-      for (int i = 0; i<3; i++) {
-        motor(1);
-        delay(3000);
-        motor(2);
-        
-        if (park_check(1)) {
-          digitalWrite(LED, HIGH);
-          delay(200);
-          digitalWrite(LED, LOW);
-          delay(100);
-          digitalWrite(LED, HIGH);
-          delay(200);
-          digitalWrite(LED, LOW);
-          break;
+      // check parking available
+      digitalWrite(TRIG_P_R, LOW);
+      delayMicroseconds(2);
+      digitalWrite(TRIG_P_R,  HIGH);
+      delayMicroseconds(10);
+      digitalWrite(TRIG_P_R, LOW);
+      const unsigned long duration_P_R = pulseIn(ECHO_P_R, HIGH);
+
+      if (duration_P_R < 2000) {
+
+        // Buzzer says OK
+        digitalWrite(BUZZ, HIGH); delay(200);
+        digitalWrite(BUZZ, LOW);  delay(100);
+        digitalWrite(BUZZ, HIGH); delay(200);
+        digitalWrite(BUZZ, LOW);
+
+        // parking on the right side
+        motion_func(1, 3); delay(7000);
+        motion_func(3, 1); delay(6000);
+        motion_func(3, 5); delay(5500);
+        motion_func(1, 1); delay(1500);
+        motion_func(2, 3);
+
+        // wait for 10 seconds
+        for (int i=0; i<9; i++) {
+          digitalWrite(BUZZ, HIGH); delay(200); 
+          digitalWrite(BUZZ, LOW); delay(1000);
         }
-        digitalWrite(LED, HIGH);
-        delay(200);
-        digitalWrite(LED, LOW);
+
+        // get out of parking lot
+        motion_func(3, 3); delay(1500);
+        motion_func(1, 5); delay(5000);
+        motion_func(1, 1); delay(5500);
+        motion_func(2, 3);
+        break;
       }
-      digitalWrite(LED, LOW);
+
+      digitalWrite(BUZZ, HIGH);
+      delay(200);
+      digitalWrite(BUZZ, LOW);
+
       break;
 
     // left side
@@ -238,92 +251,122 @@ void park(int c) {
   }
 }
 
-void intersection(int c) {
+// Function for turn left/right or go forward
+void intersection_fun(int command) {
 
-  switch (c) {
-    
+  switch (command) {
+
     case 1: // turn Right
 
-      myservo.write(RR);
-      for (int i = 0; i < 300; i++) {
+      for (int i = 0; i < 150; i++) {
+
         if (obstacle()) {
-        motor(2);
-        i -= 1;
-      } else {
-        motor(1);
-      }
+          motion_func(2, 1);
+          i -= 1;
+        } 
+        else {
+          motion_func(1, 1);
+        }
         delay(10);
       }
-      myservo.write(C);
+      motion_func(2, 3);
       Serial.flush();
       break;
 
     case 2: // center
-      myservo.write(C);
+      motion_func(1, 3);
+      delay(10000);
+      motion_func(2, 3);
+      Serial.flush();
       break;
 
     case 3: // turn Left
-      motor(1);
-      myservo.write(C);
-      delay(2000);
-      myservo.write(L);
-      delay(9000);
-      myservo.write(LL);
-      delay(9000);
-      myservo.write(C);
+
+      motion_func(1, 3);
+      delay(1000);
+
+      for (int i = 0; i < 130; i++) {
+        if (obstacle()) {
+          motion_func(2, 4);
+          i -= 1;
+        } 
+        else {
+          motion_func(1, 4);
+        }
+        delay(10);
+      }
+
+      for (int i = 0; i < 70; i++) {
+        if (obstacle()) {
+          motion_func(2, 5);
+          i -= 1;
+        } 
+        else {
+          motion_func(1, 5);
+        }
+        delay(10);
+      }
+      motion_func(2, 3);
       Serial.flush();
       break;
   }
 }
 
-void steering(int c) {
+// Function for controling motor and steering
+void motion_func(int motor_command, int steering_command) {
+  // Execute motor command
+  switch (motor_command) {
+    case 1: // forward
+      digitalWrite(M, HIGH);
+      digitalWrite(E, HIGH);
+      break;
+    case 2: // stop
+      digitalWrite(M, HIGH);
+      digitalWrite(E, LOW);
+      break;
+    case 3: // backward
+      digitalWrite(M, LOW);
+      digitalWrite(E, HIGH);
+      break;
+  }
 
-  switch (c) {
-
+  // Execute steering command
+  switch (steering_command) {
     case 1: // RR
       myservo.write(RR);
       break;
-
     case 2: // R
       myservo.write(R);
       break;
-
     case 3: // C
       myservo.write(C);
       break;
-
     case 4: // L
       myservo.write(L);
       break;
-
     case 5: // LL
       myservo.write(LL);
       break;
   }
 }
 
+// // Function for finding parking area
+// bool park_check(int side) {
+//   switch (side) {
+//     case 1:
+//       digitalWrite(TRIG_P_R, LOW);
+//       delayMicroseconds(2);
+//       digitalWrite(TRIG_P_R,  HIGH);
+//       delayMicroseconds(10);
+//       digitalWrite(TRIG_P_R, LOW);
+//       const unsigned long duration_P_R = pulseIn(ECHO_P_R, HIGH);
 
-bool park_check(int side) {
+//       if (duration_P_R < 2000) {
+//         return false;
+//       } else {
+//         return true;
+//       }
 
-  switch (side) {
-  
-    case 1:
-
-      digitalWrite(TRIG_C, LOW);
-      delayMicroseconds(2);
-      digitalWrite(TRIG_C,  HIGH);
-      delayMicroseconds(10);
-      digitalWrite(TRIG_C, LOW);
-      const unsigned long duration_C = pulseIn(ECHO_C, HIGH);
-
-      Serial.println(duration_C);
-
-      if (duration_C < 400) {
-        return false;
-      } else {
-        return true;
-      }
-
-      break;
-  }
-}
+//       break;
+//   }
+// }
