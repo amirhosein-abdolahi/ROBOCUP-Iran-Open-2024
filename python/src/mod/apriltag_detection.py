@@ -4,9 +4,6 @@ import cv2
 import math
 detector = Detector(families='tag36h11')
 
-# Define gap of sign
-min_size = 80
-
 # Mach labels and april tags
 labels = {
     0: 'tunnel beginning',
@@ -26,7 +23,7 @@ labels = {
 }
 
 # Functions for detect apriltag
-def apriltag_detection(frame):
+def apriltag_detection(frame, min_size):
     # Convert the frame to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     
@@ -49,7 +46,6 @@ def apriltag_detection(frame):
     
     # Show nearest apriltag
     label = 'no sign'
-    side = 'no sign'
     if nearest_apriltag is not None:
         cv2.polylines(frame, [nearest_apriltag.corners.astype(int)], True, (240, 130, 50), 2)
         
@@ -58,13 +54,5 @@ def apriltag_detection(frame):
             label = labels[nearest_apriltag.tag_id]
         except:
             pass
-        
-        # Find the side of sign
-        center = nearest_apriltag.center.astype(int)
-        _, width = gray.shape
-        if center[0] >= width / 2:
-            side = 'right'
-        else:
-            side = 'left'
             
-    return label, side
+    return label

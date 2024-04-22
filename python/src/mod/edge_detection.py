@@ -36,7 +36,7 @@ def edge_detection(frame, best_pos, normal_pos):
     # threshold: The minimum number of intersections to "*detect*" a line
     # minLineLength: The minimum number of points that can form a line. Lines with less than this number of points are disregarded.
     # maxLineGap: The maximum gap between two points to be considered in the same line.
-    lines= cv2.HoughLinesP(roi, 1, np.pi/180, threshold=30, minLineLength=10, maxLineGap=30)
+    lines= cv2.HoughLinesP(roi, 1, np.pi/180, threshold=40, minLineLength=10, maxLineGap=30)
 
     # Draw the detected lines on the original image
     if lines is not None:
@@ -83,15 +83,15 @@ def edge_detection(frame, best_pos, normal_pos):
         global left_edge, right_edge
         left_edge, right_edge = None, None
         if left_line is not None:
-            x1, y1, x2, y2, cx, _ = left_line
+            lx1, ly1, lx2, ly2, cx, _ = left_line
             left_edge = cx
-            cv2.line(frame, (x1, y1), (x2, y2), (36, 51, 235), 5)
+            cv2.line(frame, (lx1, ly1), (lx2, ly2), (36, 51, 235), 5)
             
         if right_line is not None:
-            x1, y1, x2, y2, cx, _ = right_line
+            rx1, ry1, rx2, ry2, cx, _ = right_line
             right_edge = cx
-            cv2.line(frame, (x1, y1), (x2, y2), (36, 51, 235), 5)
-            
+            cv2.line(frame, (rx1, ry1), (rx2, ry2), (36, 51, 235), 5)
+        
         # Find the track line
         if left_edge is not None and right_edge is not None:
             track_line = ((left_edge + right_edge) // 2, roi_up)
