@@ -6,12 +6,21 @@ from time import sleep
 from gpiozero.pins.pigpio import PiGPIOFactory
 from gpiozero import AngularServo
 
+# Set the robot mode 
+# modes = city, race
+mode = 'city'
+edge_order = 'forward'
+
 # Config camera servo motors
 factory = PiGPIOFactory()
 servox = AngularServo(18, min_pulse_width=0.0005, max_pulse_width=0.0025, pin_factory=factory)
 servoy = AngularServo(17, min_pulse_width=0.0005, max_pulse_width=0.0025, pin_factory=factory)
-xangle = -10
-yangle = 20
+if mode == 'city':
+    xangle = -10
+    yangle = 10
+elif mode == 'race':
+    xangle = -10
+    yangle = 20
 servox.angle = xangle
 servoy.angle = yangle
 
@@ -22,14 +31,13 @@ import mod.apriltag_detection as apriltag
 import mod.trafficlight_detection as light
 import mod.edge_detection_race as race
 
-# Set the robot mode 
-# modes = city, race
-mode = 'city'
-edge_order = 'forward'
-
 # Set up the serial connection to arduino
 ser = serial.Serial(port='/dev/ttyUSB0', baudrate=9600, timeout=.1) # For raspberry pi '/dev/ttyUSB0'
 sleep(5) # Initialized the serial connection
+
+# Define some variables for stop sign
+num_stop_sign = 0
+num_no_stop_sign = 80
 
 # Define some variables for traffic light
 num_light = 0
@@ -39,15 +47,15 @@ num_no_light = 100 # Max number of not found light
 num_sign = 0
 num_no_sign = 100 # Max number of not found sign
 
-# Define some variables for parking
-sign_to_first = 90
-first_to_second = 45
-second_to_third = 45
+# # Define some variables for parking
+# sign_to_first = 90
+# first_to_second = 45
+# second_to_third = 45
 
 # Set some variables
 if mode == 'city':
-    best_pos = 40
-    normal_pos = 140
+    best_pos = 30
+    normal_pos = 130
 elif mode == 'race':
     best_pos = 130
     normal_pos = 180
@@ -74,6 +82,7 @@ def send_order(order, delay=0.05):
  
 # Capture video from the camera (you might need to adjust the camera index)
 cap = cv2.VideoCapture(0)
+# cap_park = cv2.VideoCapture(2)
 
 # Function for go forward with edge detection
 def go_forward(time):
@@ -96,15 +105,25 @@ def go_forward(time):
 while True:
     # Read a frame from the video stream
     ret, frame = cap.read()
+    # ret_park, frame_park = cap_park.read()
     if not ret:
         print('camera not found')
         break
     
     # Resize the frame
     frame = cv2.resize(frame, (640, 480))
+    # frame_park = cv2.resize(frame_park, (640, 480))
+    # frame_park = cv2.rotate(frame_park, cv2.ROTATE_90_CLOCKWISE)
+    
+    # # Detect apriltag from park camera
+    # apriltag_label_park = apriltag.apriltag_detection(frame_park, 150)
     
     # Detect apriltag
-    apriltag_label, apriltag_side = apriltag.apriltag_detection(frame)
+    if mode == 'city':
+        apriltag_label = apriltag.apriltag_detection(frame, 150)
+    elif mode == 'race':
+        apriltag_label = apriltag.apriltag_detection(frame, 250)
+        
     
     # Detect and track lines with edges
     if mode == 'city':
@@ -138,10 +157,17 @@ while True:
     
     # Find the order
     if mode == 'city': # City mode
+
+        # Check state of robot
         if apriltag_label == 'stop':
             send_order([2, 0, 0, 0, 0])
+            num_stop_sign = 0
         else:
-            if apriltag_label == 'cross walk':
+            if num_stop_sign < num_no_stop_sign:
+                send_order([2, 0, 0, 0, 0])
+                num_stop_sign += 1
+                sleep(0.05) 
+            elif apriltag_label == 'cross walk':
                 go_forward(2)
                 send_order([2, 0, 0, 0, 0]) # Stop seconds
                 sleep(5)
@@ -150,56 +176,59 @@ while True:
                 send_order([1, 1, 0, 0, steering_order])
             elif apriltag_label == 'tunnel end':
                 send_order([1, 2, 0, 0, steering_order])
-            elif apriltag_label == 'parking zone':
+            # elif apriltag_label == 'parking zone':
+            #     # Go from sign to first parking zone
+            #     go_forward(4.5)
+            #     send_order([2, 0, 0, 0, 3]) # Stop seconds
+            #     sleep(1)
+            #     send_order([0, 0, 1, 0, 0]) # Send park order
+            #     sleep(1)
                 
-                # Go from sign to first parking zone
-                if apriltag_side == 'right':
-                    go_forward(4.5)
-                elif apriltag_side == 'left':
-                    go_forward(8)
-                send_order([2, 0, 0, 0, 3]) # Stop seconds
-                sleep(1)
-                if apriltag_side == 'right':
-                    send_order([0, 0, 1, 0, 0]) # Send park order
-                elif apriltag_side == 'left':
-                    send_order([0, 0, 2, 0, 0]) # Send park order
-                sleep(1)
+            #     # Go from first to second parking zone
+            #     go_forward(2.25)
+            #     send_order([2, 0, 0, 0, 3]) # Stop seconds
+            #     sleep(1)
+            #     send_order([0, 0, 1, 0, 0]) # Send park order
+            #     sleep(1)
                 
-                # Go from first to second parking zone
-                if apriltag_side == 'right':
-                    go_forward(2.25)
-                elif apriltag_side == 'left':
-                    go_forward(1)
-                send_order([2, 0, 0, 0, 3]) # Stop seconds
-                sleep(1)
-                if apriltag_side == 'right':
-                    send_order([0, 0, 1, 0, 0]) # Send park order
-                elif apriltag_side == 'left':
-                    send_order([0, 0, 2, 0, 0]) # Send park order
-                sleep(1)
+            #     # Go from second to third parking zone
+            #     go_forward(2.25)
+            #     send_order([2, 0, 0, 0, 3]) # Stop seconds
+            #     sleep(1)
+            #     send_order([0, 0, 1, 0, 0]) # Send park order
+            #     sleep(1)
+            # elif apriltag_label_park == 'parking zone':
+            #     # Go from sign to first parking zone
+            #     go_forward(4.5)
+            #     send_order([2, 0, 0, 0, 3]) # Stop seconds
+            #     sleep(1)
+            #     send_order([0, 0, 1, 0, 0]) # Send park order
+            #     sleep(1)
                 
-                # Go from second to third parking zone
-                if apriltag_side == 'right':
-                    go_forward(2.25)
-                elif apriltag_side == 'left':
-                    go_forward(1)
-                send_order([2, 0, 0, 0, 3]) # Stop seconds
-                sleep(1)
-                if apriltag_side == 'right':
-                    send_order([0, 0, 1, 0, 0]) # Send park order
-                elif apriltag_side == 'left':
-                    send_order([0, 0, 2, 0, 0]) # Send park order
-                sleep(1)
+            #     # Go from first to second parking zone
+            #     go_forward(2.25)
+            #     send_order([2, 0, 0, 0, 3]) # Stop seconds
+            #     sleep(1)
+            #     send_order([0, 0, 1, 0, 0]) # Send park order
+            #     sleep(1)
+                
+            #     # Go from second to third parking zone
+            #     go_forward(2.25)
+            #     send_order([2, 0, 0, 0, 3]) # Stop seconds
+            #     sleep(1)
+            #     send_order([0, 0, 1, 0, 0]) # Send park order
+            #     sleep(1)
             else:
                 crosswalk_order = crosswalk.crosswalk_detection(frame) # Detect crosswalk
                 if crosswalk_order == 'crosswalk':
                     send_order([2, 0, 0, 0, 3]) # Stop befor the crosswalk
-                    servox.angle = -30 # Move camera to detect apriltag
+                    sleep(1)
+                    servox.angle = -35 # Move camera to detect apriltag
                     sleep(1)
                     while True:
                         _, frame = cap.read()
                         frame = cv2.resize(frame, (640, 480))
-                        apriltag_label, apriltag_side = apriltag.apriltag_detection(frame) # Detect apriltag
+                        apriltag_label = apriltag.apriltag_detection(frame, 150) # Detect apriltag
                         print(apriltag_label) # Debuging
                         print(num_sign) # Debuging
                         if apriltag_label in intersection_sign:
@@ -220,7 +249,7 @@ while True:
                         cv2.imshow('result', frame)
                         cv2.waitKey(1)
                     servox.angle = xangle # Reset camera position
-                    servoy.angle = -10 # Move camera to detect traffic light
+                    # servoy.angle = -10 # Move camera to detect traffic light
                     sleep(1)
                     while True:
                         _, frame = cap.read()
@@ -230,17 +259,19 @@ while True:
                         print(num_light) # Debuging
                         if trafficlight_order != 'no light':
                             if trafficlight_order == 'green light':
-                                servoy.angle = yangle # Reset camera position
-                                sleep(1)
-                                send_order([1, 0, 0, 0, 3], 4.5) # Go forward for secends
+                                # servoy.angle = yangle # Reset camera position
+                                # sleep(1)
+                                # send_order([1, 0, 0, 0, 3], 4.5) # Go forward for secends
                                 send_order([0, 0, 0, sign_order, 0])
+                                sleep(17)
                                 num_light = 0
                                 break
                         elif num_light > num_no_light:
-                            servoy.angle = yangle # Reset camera position
-                            sleep(1)
-                            send_order([1, 0, 0, 0, 3], 4.5) # Go forward for secends
+                            # servoy.angle = yangle # Reset camera position
+                            # sleep(1)
+                            # send_order([1, 0, 0, 0, 3], 4.5) # Go forward for secends
                             send_order([0, 0, 0, sign_order, 0])
+                            sleep(17)
                             num_light = 0
                             break
                         else:
@@ -252,10 +283,18 @@ while True:
                         cv2.waitKey(1)
                 else:
                     send_order([1, 0, 0, 0, steering_order]) # Go forward
+        
+        # # Display the park frame
+        # cv2.imshow('park frame', frame_park)
                     
     elif mode == 'race': # Race mode
         if apriltag_label == 'stop':
             send_order([2, 0, 0, 0, 0])
+            num_stop_sign = 0
+        elif num_stop_sign < num_no_stop_sign:
+            send_order([2, 0, 0, 0, 0])
+            num_stop_sign += 1
+            sleep(0.05)
         else:
             send_order([1, 0, 0, 0, steering_order]) # Go forward
             
@@ -268,4 +307,5 @@ while True:
     
 # Release the video capture object and close windows
 cap.release()
+# cap_park.release()
 cv2.destroyAllWindows()

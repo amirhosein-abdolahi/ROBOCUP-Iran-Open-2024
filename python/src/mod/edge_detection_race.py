@@ -4,7 +4,7 @@ import numpy as np
 from mod import region_of_interest as ROI
 
 # Define some variables
-gap_right_edge = 200
+gap_right_edge = 270
 gap_left_edge = 270
 wide_gap = 150
 

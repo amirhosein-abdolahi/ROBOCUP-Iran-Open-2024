@@ -41,7 +41,7 @@ def crosswalk_detection(frame):
                 cv2.line(frame, (x1, y1), (x2, y2), (255, 255, 255), 2)
         
         # Get order
-        if num_line > 6:
+        if num_line > 8:
             order = "crosswalk"
             array_vertices = [np.array(roi_vertices, np.int32)]
             cv2.fillPoly(frame, array_vertices, (240, 130, 50))

@@ -14,7 +14,7 @@ while True:
     frame = cv2.resize(frame, (640, 480))
     
     # Detect traffic light
-    _, order = light.trafficlight_detection(frame)
+    order = light.trafficlight_detection(frame)
     
     # Display the frames
     cv2.imshow('result', frame)
