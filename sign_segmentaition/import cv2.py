@@ -1,9 +1,14 @@
 import cv2
 import numpy as np
 import os
+
+# Change the working directory to the folder this script is in.
+# Doing this because I'll be putting the files from each video in their own folder on GitHub
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 # Load the template image
-right = cv2.imread('C:/Users/amhab/Desktop/right.jpg', 0)
-left = cv2.imread('C:/Users/amhab/Desktop/left.jpg', 0)
+right = cv2.imread('right.jpg', 0)
+left = cv2.imread('left.jpg', 0)
 
 cap = cv2.VideoCapture(0)  # Open the webcam (0 for default webcam)
 
