@@ -41,7 +41,7 @@ num_no_stop_sign = 80
 
 # Define some variables for traffic light
 num_light = 0
-num_no_light = 100 # Max number of not found light
+num_no_light = 10 # Max number of not found light
 
 # Define some variables for sign
 num_sign = 0
@@ -98,7 +98,7 @@ def go_forward(time):
         
         # Show frame
         cv2.putText(frame, "GO FORWARD", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (128, 54, 234), 5)
-        cv2.imshow('result', frame)
+        # cv2.imshow('result', frame)
         cv2.waitKey(1)
         
 # Main loop
@@ -223,7 +223,7 @@ while True:
                 if crosswalk_order == 'crosswalk':
                     send_order([2, 0, 0, 0, 3]) # Stop befor the crosswalk
                     sleep(1)
-                    servox.angle = -35 # Move camera to detect apriltag
+                    servox.angle = -45 # Move camera to detect apriltag
                     sleep(1)
                     while True:
                         _, frame = cap.read()
@@ -246,7 +246,7 @@ while True:
                             num_sign += 1
                         # Show frame
                         cv2.putText(frame, "SIGN CHECK", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (128, 54, 234), 5)
-                        cv2.imshow('result', frame)
+                        # cv2.imshow('result', frame)
                         cv2.waitKey(1)
                     servox.angle = xangle # Reset camera position
                     # servoy.angle = -10 # Move camera to detect traffic light
@@ -279,7 +279,7 @@ while True:
                             num_light += 1
                         # Show frame
                         cv2.putText(frame, "LIGHT CHECK", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (128, 54, 234), 5)
-                        cv2.imshow('result', frame)
+                        # cv2.imshow('result', frame)
                         cv2.waitKey(1)
                 else:
                     send_order([1, 0, 0, 0, steering_order]) # Go forward
@@ -299,7 +299,7 @@ while True:
             send_order([1, 0, 0, 0, steering_order]) # Go forward
             
     # Display the frames
-    cv2.imshow('result', frame)
+    # cv2.imshow('result', frame)
     
     # Break the loop if 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):

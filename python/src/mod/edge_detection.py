@@ -4,8 +4,8 @@ import numpy as np
 from mod import region_of_interest as ROI
 
 # Define some variables
-gap_right_edge = 200
-gap_left_edge = 200
+gap_right_edge = 150
+gap_left_edge = 150
 
 # Function to detect edges
 def edge_detection(frame, best_pos, normal_pos):
@@ -25,9 +25,9 @@ def edge_detection(frame, best_pos, normal_pos):
     height, width = gray.shape
     roi_up = (height // 5) * 3
     roi_down = height - 30
-    width_of_roi = (width - 200) // 2 
-    roi1_vertices = [(0, roi_down), (0, roi_up), (width_of_roi, roi_up), (width_of_roi, roi_down)]
-    roi2_vertices = [(width, roi_down), (width, roi_up), (width - width_of_roi, roi_up), (width - width_of_roi, roi_down)]
+    width_of_roi = (width - 100) // 2 
+    roi1_vertices = [(0, roi_down), (100, roi_up), (width_of_roi, roi_up), (width_of_roi, roi_down)]
+    roi2_vertices = [(width, roi_down), (width - 100, roi_up), (width - width_of_roi, roi_up), (width - width_of_roi, roi_down)]
     roi1, frame = ROI.region_of_interest(edges, frame, roi1_vertices)
     roi2, frame = ROI.region_of_interest(edges, frame, roi2_vertices)
     roi = cv2.add(roi1, roi2)
